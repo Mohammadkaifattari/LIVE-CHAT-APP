@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatApp - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>ChatApp</h2>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <span class="theme-icon"></span>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-section="friends">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Friends</span>
+                </button>
+                <button class="nav-btn" data-section="chat">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-text">Chat</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar avatar-sm">
+                        <span id="userInitials">ME</span>
+                    </div>
+                    <div class="user-info">
+                        <p class="user-name" id="userName">You</p>
+                        <p class="user-status">Online</p>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="signout()" >Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Friends Section -->
+            <section id="friendsSection" class="content-section active">
+                <div class="section-header">
+                    <h2>Friends</h2>
+                    <p class="section-subtitle">Manage your connections</p>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="all">All Users</button>
+                    <button class="tab-btn" data-tab="friends">My Friends</button>
+                    <button class="tab-btn" data-tab="requests">Requests</button>
+                </div>
+
+                <div class="tab-content active" id="allUsersTab">
+                    <div class="users-grid" id="allUsersList"></div>
+                </div>
+
+                <div class="tab-content" id="friendsTab">
+                    <div class="users-grid" id="friendsList"></div>
+                </div>
+
+                <div class="tab-content" id="requestsTab">
+                    <div class="users-grid" id="requestsList"></div>
+                </div>
+            </section>
+
+            <!-- Chat Section -->
+            <section id="chatSection" class="content-section">
+                <div class="chat-container">
+                    <!-- Chat List -->
+                    <div class="chat-list">
+                        <div class="section-header">
+                            <h2>Messages</h2>
+                            <p class="section-subtitle">Chat with friends</p>
+                        </div>
+                        <div class="chat-list-items" id="chatListItems"></div>
+                    </div>
+
+                    <!-- Chat Window -->
+                    <div class="chat-window" id="chatWindow">
+                        <div class="empty-state">
+                            <span class="empty-icon">💬</span>
+                            <h3>Select a friend to start chatting</h3>
+                            <p>Choose a conversation from the list</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="js/dashboard.js"></script>
+    <script  src="js/friends.js"></script>
+    <script src="js/chat.js"></script>
+    <script type="module" src="js/config.js"></script>
+</body>
+</html>
