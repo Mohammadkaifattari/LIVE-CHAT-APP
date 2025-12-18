@@ -5,15 +5,10 @@ import {
 
 const auth = getAuth();
 
-// ==============================
-// 1. App State
-// ==============================
 const appData = {
     currentUser: null,
     users: [],
     friends: [],
-    pendingRequests: [],
-    friendRequests: [],
     currentSection: "friends"
 };
 
@@ -22,9 +17,6 @@ const chatState = {
     unsubscribeMessages: null 
 };
 
-// ==============================
-// 2. Initialization
-// ==============================
 document.addEventListener("DOMContentLoaded", () => {
     initTheme();      
     initNavigation(); 
@@ -40,9 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// ==============================
-// 3. Theme & Navigation
-// ==============================
 function initTheme() {
     const themeToggle = document.getElementById("themeToggle");
     const savedTheme = localStorage.getItem("theme") || "light";
@@ -70,9 +59,6 @@ function switchSection(section) {
         sec.classList.toggle("active", sec.id === `${section}Section`));
 }
 
-// ==============================
-// 4. Data Refresh
-// ==============================
 async function refreshData() {
     const uid = appData.currentUser.uid;
     const userSnap = await getDoc(doc(db, "users", uid));
@@ -80,8 +66,6 @@ async function refreshData() {
     if (userSnap.exists()) {
         const data = userSnap.data();
         appData.friends = data.friends || [];
-        appData.pendingRequests = data.sendrequest || [];
-        appData.friendRequests = data.friendRequest || [];
         document.getElementById("userName").innerText = data.UserName || "User";
         document.getElementById("userInitials").innerText = (data.UserName ? data.UserName[0] : "U").toUpperCase();
     }
@@ -94,9 +78,6 @@ async function refreshData() {
     renderChatList();
 }
 
-// ==============================
-// 5. User Cards Rendering
-// ==============================
 function renderUsers() {
     const container = document.getElementById("allUsersList");
     if (!container) return;
@@ -116,16 +97,13 @@ function renderUsers() {
                 </div>
             </div>
             <div class="user-card-actions">
-                ${isFriend ? `<button class="btn btn-primary" onclick="openChat('${user.id}')">💬 Chat</button>` : 
+                ${isFriend ? `<button class="btn btn-primary" onclick="openChat('${user.id}')">💬 Message</button>` : 
                 `<button class="btn btn-primary" onclick="addFriend('${user.id}')">Add Friend</button>`}
             </div>`;
         container.appendChild(card);
     });
 }
 
-// ==============================
-// 6. CHAT MODULE (Merged with chat.js features)
-// ==============================
 function renderChatList() {
     const container = document.getElementById("chatListItems");
     if (!container) return;
@@ -149,7 +127,7 @@ function renderChatList() {
 window.openChat = (friendId) => {
     switchSection("chat");
     chatState.currentChatFriendId = friendId;
-    renderChatList(); // Update active state in list
+    renderChatList();
     
     const friend = appData.users.find(u => u.id === friendId);
     const container = document.getElementById("chatWindow");
@@ -166,7 +144,7 @@ window.openChat = (friendId) => {
         <div class="chat-input-container">
             <div class="chat-input-wrapper">
                 <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
-                <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()">Send</button>
             </div>
         </div>`;
 
@@ -181,7 +159,7 @@ function listenToMessages(friendId) {
 
     const q = query(collection(db, "messages"), where("roomId", "==", roomId), orderBy("timestamp", "asc"));
 
-    // includeMetadataChanges true karne se message "Sending" state mein bhi gayab nahi hoga
+    // metadataChanges: true ensures the message shows up locally before reaching the server
     chatState.unsubscribeMessages = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
         const msgContainer = document.getElementById("chatMessages");
         if (!msgContainer) return;
@@ -191,7 +169,7 @@ function listenToMessages(friendId) {
             const data = doc.data();
             const isMe = data.senderId === appData.currentUser.uid;
             
-            // Time formatting (jaise aapke chat.js mein tha)
+            // Time logic
             const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "sending...";
 
             const div = document.createElement("div");
@@ -204,6 +182,8 @@ function listenToMessages(friendId) {
             msgContainer.appendChild(div);
         });
         msgContainer.scrollTop = msgContainer.scrollHeight;
+    }, (error) => {
+        console.error("Chat Listener Error:", error);
     });
 }
 
@@ -213,7 +193,7 @@ window.sendMessage = async () => {
     if (!text || !chatState.currentChatFriendId) return;
 
     const roomId = [appData.currentUser.uid, chatState.currentChatFriendId].sort().join("_");
-    input.value = ""; // Input foran khali karein taake user ko lage send ho gaya
+    input.value = ""; // Clear input immediately for better UX
 
     try {
         await addDoc(collection(db, "messages"), {
@@ -223,13 +203,10 @@ window.sendMessage = async () => {
             timestamp: serverTimestamp()
         });
     } catch (e) {
-        console.error("Error:", e);
+        console.error("Send Error:", e);
     }
 };
 
-// ==============================
-// 7. Actions
-// ==============================
 window.addFriend = async (id) => {
     const uid = appData.currentUser.uid;
     await updateDoc(doc(db, "users", id), { friendRequest: arrayUnion(uid) });
