@@ -174,99 +174,99 @@ function renderUsers() {
 // ==============================
 // 5. Real-time Chat Logic
 // ==============================
-function renderChatList() {
-    const container = document.getElementById("chatListItems");
-    if (!container) return;
-    container.innerHTML = "";
+// function renderChatList() {
+//     const container = document.getElementById("chatListItems");
+//     if (!container) return;
+//     container.innerHTML = "";
     
-    const friends = appData.users.filter(u => appData.friends.includes(u.id));
-    if (friends.length === 0) {
-        container.innerHTML = `<div class="empty-state"><h3>No friends yet</h3></div>`;
-        return;
-    }
+//     const friends = appData.users.filter(u => appData.friends.includes(u.id));
+//     if (friends.length === 0) {
+//         container.innerHTML = `<div class="empty-state"><h3>No friends yet</h3></div>`;
+//         return;
+//     }
 
-    friends.forEach(user => {
-        const name = user.UserName || "User";
-        const div = document.createElement("div");
-        div.className = "chat-list-item";
-        div.onclick = () => openChat(user.id);
-        div.innerHTML = `
-            <div class="avatar" style="background:#8b5cf6"><span>${name[0].toUpperCase()}</span></div>
-            <div class="chat-list-info">
-                <div class="chat-list-name">${name}</div>
-                <div class="chat-list-preview">Tap to message</div>
-            </div>`;
-        container.appendChild(div);
-    });
-}
+//     friends.forEach(user => {
+//         const name = user.UserName || "User";
+//         const div = document.createElement("div");
+//         div.className = "chat-list-item";
+//         div.onclick = () => openChat(user.id);
+//         div.innerHTML = `
+//             <div class="avatar" style="background:#8b5cf6"><span>${name[0].toUpperCase()}</span></div>
+//             <div class="chat-list-info">
+//                 <div class="chat-list-name">${name}</div>
+//                 <div class="chat-list-preview">Tap to message</div>
+//             </div>`;
+//         container.appendChild(div);
+//     });
+// }
 
-window.openChat = (friendId) => {
-    switchSection("chat");
-    chatState.currentChatFriendId = friendId;
+// window.openChat = (friendId) => {
+//     switchSection("chat");
+//     chatState.currentChatFriendId = friendId;
     
-    const friend = appData.users.find(u => u.id === friendId);
-    if(!friend) return;
+//     const friend = appData.users.find(u => u.id === friendId);
+//     if(!friend) return;
     
-    const container = document.getElementById("chatWindow");
-    container.innerHTML = `
-        <div class="chat-header">
-            <div class="chat-header-name">${friend.UserName}</div>
-        </div>
-        <div class="chat-messages" id="chatMessages"></div>
-        <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-                <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
-                <button class="btn btn-primary" onclick="sendMessage()">Send</button>
-            </div>
-        </div>`;
+//     const container = document.getElementById("chatWindow");
+//     container.innerHTML = `
+//         <div class="chat-header">
+//             <div class="chat-header-name">${friend.UserName}</div>
+//         </div>
+//         <div class="chat-messages" id="chatMessages"></div>
+//         <div class="chat-input-container">
+//             <div class="chat-input-wrapper">
+//                 <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+//                 <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+//             </div>
+//         </div>`;
 
-    document.getElementById("chatInput").focus();
-    document.getElementById("chatInput").onkeypress = (e) => { if(e.key === "Enter") sendMessage(); };
-    listenToMessages(friendId);
-};
+//     document.getElementById("chatInput").focus();
+//     document.getElementById("chatInput").onkeypress = (e) => { if(e.key === "Enter") sendMessage(); };
+//     listenToMessages(friendId);
+// };
 
-function listenToMessages(friendId) {
-    if (chatState.unsubscribeMessages) chatState.unsubscribeMessages();
-    const roomId = [appData.currentUser.uid, friendId].sort().join("_");
+// function listenToMessages(friendId) {
+//     if (chatState.unsubscribeMessages) chatState.unsubscribeMessages();
+//     const roomId = [appData.currentUser.uid, friendId].sort().join("_");
 
-    const q = query(collection(db, "messages"), where("roomId", "==", roomId), orderBy("timestamp", "asc"));
+//     const q = query(collection(db, "messages"), where("roomId", "==", roomId), orderBy("timestamp", "asc"));
 
-    chatState.unsubscribeMessages = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-        const msgContainer = document.getElementById("chatMessages");
-        if (!msgContainer) return;
-        msgContainer.innerHTML = "";
+//     chatState.unsubscribeMessages = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+//         const msgContainer = document.getElementById("chatMessages");
+//         if (!msgContainer) return;
+//         msgContainer.innerHTML = "";
         
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const isMe = data.senderId === appData.currentUser.uid;
-            const div = document.createElement("div");
-            div.className = `message ${isMe ? "sent" : "received"}`;
-            div.innerHTML = `<div class="message-bubble">${data.text}</div>`;
-            msgContainer.appendChild(div);
-        });
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-    });
-}
+//         snapshot.forEach(doc => {
+//             const data = doc.data();
+//             const isMe = data.senderId === appData.currentUser.uid;
+//             const div = document.createElement("div");
+//             div.className = `message ${isMe ? "sent" : "received"}`;
+//             div.innerHTML = `<div class="message-bubble">${data.text}</div>`;
+//             msgContainer.appendChild(div);
+//         });
+//         msgContainer.scrollTop = msgContainer.scrollHeight;
+//     });
+// }
 
-window.sendMessage = async () => {
-    const input = document.getElementById("chatInput");
-    const text = input.value.trim();
-    if (!text || !chatState.currentChatFriendId) return;
+// window.sendMessage = async () => {
+//     const input = document.getElementById("chatInput");
+//     const text = input.value.trim();
+//     if (!text || !chatState.currentChatFriendId) return;
 
-    const roomId = [appData.currentUser.uid, chatState.currentChatFriendId].sort().join("_");
-    input.value = ""; // Turant clear karein taake user ko lage send ho gaya
+//     const roomId = [appData.currentUser.uid, chatState.currentChatFriendId].sort().join("_");
+//     input.value = ""; // Turant clear karein taake user ko lage send ho gaya
     
-    try {
-        await addDoc(collection(db, "messages"), {
-            roomId,
-            senderId: appData.currentUser.uid,
-            text,
-            timestamp: serverTimestamp()
-        });
-    } catch (e) {
-        console.error("Error sending:", e);
-    }
-};
+//     try {
+//         await addDoc(collection(db, "messages"), {
+//             roomId,
+//             senderId: appData.currentUser.uid,
+//             text,
+//             timestamp: serverTimestamp()
+//         });
+//     } catch (e) {
+//         console.error("Error sending:", e);
+//     }
+// };
 
 // ==============================
 // 6. Social Actions
