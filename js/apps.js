@@ -30,14 +30,12 @@ window.signup = async (event) => {
     const userCredential = await createUserWithEmailAndPassword(auth, emailVal, passVal);
     const user = userCredential.user;
     
-    // Yahan hum wahi names use kar rahe hain jo dashboard.js dhoond raha hai
     await setDoc(doc(db, "users", user.uid), {
-      UserName: nameVal,      // Capital 'U'
+      UserName: nameVal,      
       email: emailVal,
       userId: user.uid,
       friends: [],
-      sendrequest: [],        // All lowercase 'r'
-      friendRequest: [],      // Capital 'R'
+      sendrequest: [],      
       createdAt: new Date().toISOString()
     });
 

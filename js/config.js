@@ -27,7 +27,6 @@ import {
     signOut 
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-// Firebase configuration (Keep your existing config)
 const firebaseConfig = {
     apiKey: "AIzaSyCtaAeFwHgeXioFfSasr6pgi9uhAZtkU04",
     authDomain: "taytay-paplu.firebaseapp.com",

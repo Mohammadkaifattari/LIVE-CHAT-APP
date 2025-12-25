@@ -5,9 +5,7 @@ import {
 
 const auth = getAuth();
 
-// ==============================
-// 1. App State
-// ==============================
+
 const appData = {
     currentUser: null,
     users: [],
@@ -42,9 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// ==============================
+//
 // 3. Theme & UI Logic
-// ==============================
+
 function initTheme() {
     const themeToggle = document.getElementById("themeToggle");
     const savedTheme = localStorage.getItem("theme") || "light";
@@ -98,9 +96,9 @@ function switchTab(tab) {
     if (target) target.classList.add("active");
 }
 
-// ==============================
-// 4. Data Core
-// ==============================
+
+// . Data Core
+
 async function refreshData() {
     try {
         const uid = appData.currentUser.uid;
@@ -124,7 +122,7 @@ async function refreshData() {
         usersSnapshot.forEach(doc => appData.users.push({ id: doc.id, ...doc.data() }));
 
         renderUsers();
-        renderChatList(); // Ab ye error nahi dega
+        renderChatList();
     } catch (e) {
         console.error("Refresh Error:", e);
     }
@@ -171,9 +169,9 @@ function renderUsers() {
     });
 }
 
-// ==============================
-// 5. Real-time Chat Logic
-// ==============================
+
+// 5. Ral-time Chat Logic
+
 function renderChatList() {
     const container = document.getElementById("chatListItems");
     if (!container) return;
@@ -268,9 +266,7 @@ window.sendMessage = async () => {
     }
 };
 
-// ==============================
 // 6. Social Actions (Globalized)
-// ==============================
 window.addFriend = async (id) => {
     const uid = appData.currentUser.uid;
     await updateDoc(doc(db, "users", id), { friendRequest: arrayUnion(uid) });
