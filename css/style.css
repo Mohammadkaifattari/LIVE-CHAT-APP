@@ -694,6 +694,7 @@ body {
   padding: 20px 32px;
   background: var(--bg-primary);
   border-top: 1px solid var(--border-color);
+  position: sticky;
 }
 
 .chat-input-wrapper {
