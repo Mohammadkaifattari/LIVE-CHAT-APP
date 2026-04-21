@@ -1,9 +1,24 @@
 import { 
-    getAuth, onAuthStateChanged, signOut, collection, db, getDocs, query, where, 
-    doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp, onSnapshot, orderBy 
+    auth, // getAuth ki jagah direct 'auth' import karein
+    onAuthStateChanged, 
+    signOut, 
+    collection, 
+    db, 
+    getDocs, 
+    query, 
+    where, 
+    doc, 
+    getDoc, 
+    updateDoc, 
+    arrayUnion, 
+    arrayRemove, 
+    addDoc, 
+    serverTimestamp, 
+    onSnapshot, 
+    orderBy 
 } from "./config.js";
 
-const auth = getAuth();
+
 
 
 const appData = {
@@ -25,7 +40,7 @@ const chatState = {
 // 2. Initialization
 // ==============================
 document.addEventListener("DOMContentLoaded", () => {
-    initTheme();      
+    // initTheme is now handled by auth.js
     initNavigation(); 
     initTabs();       
     
@@ -43,27 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 //
 // 3. Theme & UI Logic
 
-function initTheme() {
-    const themeToggle = document.getElementById("themeToggle");
-    const savedTheme = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", savedTheme);
-    updateThemeIcon(savedTheme);
-
-    if (themeToggle) {
-        themeToggle.onclick = () => {
-            const currentTheme = document.documentElement.getAttribute("data-theme");
-            const newTheme = currentTheme === "light" ? "dark" : "light";
-            document.documentElement.setAttribute("data-theme", newTheme);
-            localStorage.setItem("theme", newTheme);
-            updateThemeIcon(newTheme);
-        };
-    }
-}
-
-function updateThemeIcon(theme) {
-    const iconSpan = document.querySelector(".theme-icon");
-    if (iconSpan) iconSpan.innerHTML = theme === "light" ? "🌙" : "☀️";
-}
+// Navigation & Tabs handled here
 
 function initNavigation() {
     document.querySelectorAll(".nav-btn").forEach(btn => {

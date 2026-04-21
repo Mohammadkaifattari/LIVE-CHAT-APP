@@ -1,5 +1,6 @@
-// Import specific versions (Updated to the latest stable version - 12.7.0)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+// Import specific versions (Updated to stable version 11.1.0)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+
 import { 
     getFirestore, 
     collection, 
@@ -13,11 +14,11 @@ import {
     where, 
     writeBatch, 
     arrayUnion, 
-    arrayRemove ,
+    arrayRemove,
     onSnapshot,
     orderBy,
     serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 import { 
     getAuth, 
@@ -25,16 +26,17 @@ import {
     signInWithEmailAndPassword, 
     onAuthStateChanged, 
     signOut 
-} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
+// Firebase Configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyCtaAeFwHgeXioFfSasr6pgi9uhAZtkU04",
-    authDomain: "taytay-paplu.firebaseapp.com",
-    projectId: "taytay-paplu",
-    storageBucket: "taytay-paplu.firebasestorage.app",
-    messagingSenderId: "924298031953",
-    appId: "1:924298031953:web:2263d83004daef38081970",
-    measurementId: "G-X143CMDFG3"
+  apiKey: "AIzaSyDrsu4YdMiO_KaXbqwF6HThAWkqYwDhvww",
+  authDomain: "my-web-app-58073.firebaseapp.com",
+  projectId: "my-web-app-58073",
+  storageBucket: "my-web-app-58073.firebasestorage.app",
+  messagingSenderId: "549794649492",
+  appId: "1:549794649492:web:3a0ea10c064810dee6ab81",
+  measurementId: "G-XZJCQDFQ6W"
 };
 
 // Initialize Firebase
@@ -42,31 +44,30 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Exporting everything for your Friend System
+// Export everything for the Friend System
 export {
     auth,
     db,
+    getAuth, // Dashboard.js ke liye zaroori hai
     // AUTH FUNCTIONS
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     onAuthStateChanged,
     signOut,
-    getAuth,
     // FIRESTORE FUNCTIONS
     collection,
     doc,
-      addDoc,
+    addDoc,
     setDoc,
     getDoc,
     getDocs,
     updateDoc,
     query,
     where,
-    writeBatch,    // Batch operations ke liye zaroori
-    arrayUnion,    // Friends add karne ke liye
-    arrayRemove ,
+    writeBatch,
+    arrayUnion,
+    arrayRemove,
     onSnapshot,
     orderBy,
-    serverTimestamp   // Request delete karne ke liye
+    serverTimestamp
 };
-

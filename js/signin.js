@@ -1,57 +1,55 @@
-import { getAuth, signInWithEmailAndPassword,onAuthStateChanged } from "./config.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "./config.js";
+import { showMessage, setBtnLoading } from "./auth.js";
 
 const auth = getAuth();
+const loginMessageEl = document.getElementById("loginMessage");
 
-window.signin = (event) => {
-  event.preventDefault()
-
-//   const Name = document.getElementById("signupName")
-    const email = document.getElementById("loginEmail")
-    const password = document.getElementById("loginPassword")
-
+window.signin = async (event) => {
+  event.preventDefault();
   
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const submitBtn = event.target.querySelector('button[type="submit"]');
 
-signInWithEmailAndPassword(auth, email.value, password.value)
-  .then((userCredential) => {
-    // Signed in 
-    const user = userCredential.user;
-      event.reset()
-   
-    console.log("user signup hogya he")
-      setTimeout(() => {
-                window.location.replace("dashboard.html")
-                
-            },5000);
+  if (!email || !password) {
+    showMessage(loginMessageEl, "Please enter both email and password.", "error");
+    return;
+  }
 
+  setBtnLoading(submitBtn, true, "Signing In...");
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    event.target.reset();
+    showMessage(loginMessageEl, "Login successful! Redirecting...", "success");
     
-    // ...
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
+    setTimeout(() => {
+      window.location.replace("dashboard.html");
+    }, 1500);
+  } catch (error) {
+    console.error("Login Error:", error);
+    let errorMsg = "Login failed. Please check your credentials.";
+    if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+      errorMsg = "Invalid email or password.";
+    } else if (error.code === "auth/too-many-requests") {
+      errorMsg = "Too many failed attempts. Please try again later.";
+    }
+    showMessage(loginMessageEl, errorMsg, "error");
+  } finally {
+    setBtnLoading(submitBtn, false);
+  }
+};
+
+function checkLoginState() {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // Auto redirect if already logged in and on login/home page
+      const path = window.location.pathname;
+      if (path.includes("index.html") || path.endsWith("/") || path === "") {
+         window.location.replace("dashboard.html");
+      }
+    }
   });
 }
 
-function getUser() {
-  onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // User is signed in, see docs for a list of available properties
-    // https://firebase.google.com/docs/reference/js/auth.user
-    const uid = user.uid;
-    console.log("ye user signup he" +user)
-     console.log("user mojood hai" , uid)
-            setTimeout(() => {
-                window.location.replace("dashboard.html")
-                
-            },5000);
-    // ...
-  } else {
-    // User is signed out
-    // ...
-      console.log("user mojood nahi hai" , )
-  }
-});
-
-  
-}
-getUser()
+checkLoginState();

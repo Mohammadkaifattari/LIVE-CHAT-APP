@@ -5,48 +5,70 @@ import {
   doc, 
   setDoc 
 } from "./config.js";
+import { showMessage, setBtnLoading, isValidEmail } from "./auth.js";
 
-const userNameInput = document.getElementById("signupName");
-const emailInput = document.getElementById("signupEmail");
-const passwordInput = document.getElementById("signupPassword");
-const signupBtn = document.querySelector("button");
+const signupMessageEl = document.getElementById("signupMessage");
+const signupBtn = document.querySelector(".btn-primary");
 
 window.signup = async (event) => {
   event.preventDefault();
 
-  const nameVal = userNameInput.value.trim();
-  const emailVal = emailInput.value.trim();
-  const passVal = passwordInput.value;
+  const nameVal = document.getElementById("signupName").value.trim();
+  const emailVal = document.getElementById("signupEmail").value.trim();
+  const passVal = document.getElementById("signupPassword").value;
 
   if (!nameVal || !emailVal || !passVal) {
-    alert("Please fill all fields!");
+    showMessage(signupMessageEl, "Please fill in all fields!", "error");
     return;
   }
 
-  signupBtn.disabled = true;
-  signupBtn.innerText = "Creating Account...";
+  if (!isValidEmail(emailVal)) {
+    showMessage(signupMessageEl, "Please enter a valid email address.", "error");
+    return;
+  }
+
+  if (passVal.length < 6) {
+    showMessage(signupMessageEl, "Password should be at least 6 characters.", "error");
+    return;
+  }
+
+  setBtnLoading(signupBtn, true, "Creating Account...");
 
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, emailVal, passVal);
     const user = userCredential.user;
     
+    // Standardized user object for Friend System
     await setDoc(doc(db, "users", user.uid), {
       UserName: nameVal,      
       email: emailVal,
       userId: user.uid,
       friends: [],
-      sendrequest: [],      
+      sendrequest: [],    
+      friendRequest: [],  
       createdAt: new Date().toISOString()
     });
 
-    alert("Account created successfully!");
-    window.location.replace("dashboard.html");
+    showMessage(signupMessageEl, "Account created! Redirecting...", "success");
+    
+    setTimeout(() => {
+      window.location.replace("dashboard.html");
+    }, 1500);
 
   } catch (error) {
     console.error("Signup Error:", error);
-    alert(error.message);
+    let errorMsg = error.message; // Show the actual message for debugging
+    if (error.code === "auth/email-already-in-use") {
+        errorMsg = "This email is already registered.";
+    } else if (error.code === "auth/invalid-email") {
+        errorMsg = "Invalid email address.";
+    } else if (error.code === "auth/network-request-failed") {
+        errorMsg = "Network error. Please check your internet connection.";
+    }
+    
+    // Adding the specific error code to help the user identify the problem
+    showMessage(signupMessageEl, `Signup Error: ${errorMsg} (${error.code || 'Unknown'})`, "error");
   } finally {
-    signupBtn.disabled = false;
-    signupBtn.innerText = "Sign Up";
+    setBtnLoading(signupBtn, false, "Create Account");
   }
 };
