@@ -30,9 +30,9 @@ export default function DashboardLayout({
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex h-[100dvh] bg-background text-foreground overflow-hidden">
       <Sidebar />
-      <main className="flex-1 h-screen overflow-y-auto relative">
+      <main className="flex-1 h-full overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-[30%] bg-gradient-to-b from-primary/5 to-transparent pointer-events-none -z-10" />
         {children}
       </main>

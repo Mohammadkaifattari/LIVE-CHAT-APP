@@ -127,9 +127,9 @@ export default function PrivateChatPage() {
   if (!friend) return null;
 
   return (
-    <div className="flex flex-col h-full bg-background/50">
-      {/* Chat Header */}
-      <header className="p-4 border-b border-glass-border flex items-center justify-between glass-card !rounded-none z-10">
+    <div className="flex flex-col h-full bg-background/50 overflow-hidden">
+      {/* Chat Header - Sticky */}
+      <header className="sticky top-0 p-4 border-b border-glass-border flex items-center justify-between glass-card !rounded-none z-30">
         <div className="flex items-center gap-4">
           <button onClick={() => router.push("/dashboard/chat")} className="md:hidden">
             <ChevronLeft className="w-6 h-6" />
@@ -158,10 +158,10 @@ export default function PrivateChatPage() {
         </div>
       </header>
 
-      {/* Messages Feed */}
+      {/* Messages Feed - Scrollable area */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
+        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scroll-smooth"
       >
         {loading ? (
           <div className="h-full flex items-center justify-center">
@@ -177,12 +177,12 @@ export default function PrivateChatPage() {
                   className={`flex ${isMe ? "justify-end" : "justify-start"} message-animate`}
                 >
                   <div className={`
-                    max-w-[80%] md:max-w-[70%] px-4 py-3 rounded-2xl shadow-sm text-sm
+                    max-w-[85%] md:max-w-[70%] px-4 py-3 rounded-2xl shadow-sm text-sm
                     ${isMe 
                       ? "bg-premium-gradient text-white rounded-tr-none" 
                       : "glass-card !bg-glass-100 rounded-tl-none border-glass-border"}
                   `}>
-                    <p className="leading-relaxed">{msg.text}</p>
+                    <p className="leading-relaxed break-words">{msg.text}</p>
                     <span className={`text-[10px] mt-1.5 block opacity-50 ${isMe ? "text-right" : "text-left"}`}>
                       {msg.timestamp?.toDate ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...'}
                     </span>
@@ -194,11 +194,11 @@ export default function PrivateChatPage() {
         )}
       </div>
 
-      {/* Chat Input */}
-      <div className="p-4 md:p-6 bg-transparent">
+      {/* Chat Input - Fixed at bottom */}
+      <div className="p-4 bg-background/80 backdrop-blur-md border-t border-glass-border z-20">
         <form 
           onSubmit={handleSendMessage}
-          className="glass-card flex items-center gap-3 p-2 focus-within:border-primary/30 transition-all"
+          className="glass-card flex items-center gap-3 p-1.5 focus-within:border-primary/30 transition-all max-w-5xl mx-auto"
         >
           <input
             type="text"
