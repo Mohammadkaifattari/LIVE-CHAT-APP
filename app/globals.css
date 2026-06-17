@@ -20,8 +20,17 @@
   --font-outfit: var(--font-outfit);
   
   --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --shadow-glow-primary: 0 0 30px rgba(99, 102, 241, 0.35);
+  --shadow-glow-secondary: 0 0 30px rgba(139, 92, 246, 0.35);
+  --shadow-message: 0 4px 20px rgba(0, 0, 0, 0.25);
   
   --bg-image-premium-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --bg-image-sent-bubble: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+  --bg-image-mesh: 
+    radial-gradient(at 20% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+    radial-gradient(at 80% 10%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+    radial-gradient(at 60% 80%, rgba(99, 102, 241, 0.10) 0px, transparent 50%),
+    radial-gradient(at 10% 70%, rgba(167, 139, 250, 0.08) 0px, transparent 50%);
 }
 
 @layer base {
@@ -30,13 +39,27 @@
     --foreground: #1e1b4b;
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(255, 255, 255, 0.3);
+    --message-sent-bg: linear-gradient(135deg, #6366f1, #8b5cf6);
+    --message-received-bg: rgba(255, 255, 255, 0.08);
+    --sidebar-bg: rgba(255, 255, 255, 0.6);
   }
 
   .dark {
     --background: #09090b;
     --foreground: #f8fafc;
     --glass-bg: rgba(9, 9, 11, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --message-sent-bg: linear-gradient(135deg, #6366f1, #8b5cf6);
+    --message-received-bg: rgba(255, 255, 255, 0.06);
+    --sidebar-bg: rgba(9, 9, 11, 0.85);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -45,38 +68,77 @@
     font-family: var(--font-inter), sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Animated mesh background */
+    background-image: var(--bg-image-mesh);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 }
 
 @layer components {
+
+  /* ─── Glass Card ─────────────────────────────── */
   .glass-card {
     background-color: var(--glass-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border-radius: 1.5rem;
     box-shadow: var(--shadow-glass);
     transition: all 0.3s ease;
   }
-  
+
+  .glass-card:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: var(--shadow-glass), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  }
+
+  /* ─── Glass Card Elevated (for modals, dropdowns) */
+  .glass-card-elevated {
+    background: rgba(15, 15, 20, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), var(--shadow-glow-primary);
+  }
+
+  /* ─── Premium Button ─────────────────────────── */
   .premium-button {
     background: var(--bg-image-premium-gradient);
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 0.75rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .premium-button::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .premium-button:hover::before {
+    left: 100%;
   }
 
   .premium-button:hover {
-    box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
-    transform: translateY(-1px);
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.55), 0 4px 20px rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
   }
 
   .premium-button:active {
-    transform: scale(0.96);
+    transform: scale(0.96) translateY(0);
   }
 
+  /* ─── Input Field ────────────────────────────── */
   .input-field {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -85,31 +147,449 @@
     border-radius: 0.75rem;
     outline: none;
     transition: all 0.3s ease;
+    color: var(--foreground);
+  }
+
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.3);
   }
 
   .input-field:focus {
     background-color: rgba(255, 255, 255, 0.05);
     border-color: #6366f1;
-    box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12), 0 0 20px rgba(99, 102, 241, 0.08);
   }
+
+  /* ─── Chat Message Bubbles ───────────────────── */
+  .bubble-sent {
+    background: var(--bg-image-sent-bubble);
+    color: white;
+    border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+    box-shadow: var(--shadow-message), 0 0 20px rgba(99, 102, 241, 0.2);
+    position: relative;
+    max-width: 70%;
+  }
+
+  .bubble-received {
+    background: var(--message-received-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+    box-shadow: var(--shadow-message);
+    max-width: 70%;
+  }
+
+  /* ─── Typing Indicator ───────────────────────── */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.75rem 1rem;
+    background: var(--message-received-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+    width: fit-content;
+  }
+
+  .typing-dot {
+    width: 7px;
+    height: 7px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    animation: typingBounce 1.4s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(1) { animation-delay: 0s; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  /* ─── Avatar ─────────────────────────────────── */
+  .avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    font-family: var(--font-outfit), sans-serif;
+    background: var(--bg-image-premium-gradient);
+    color: white;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .avatar-sm  { width: 2rem;    height: 2rem;    font-size: 0.75rem; }
+  .avatar-md  { width: 2.5rem;  height: 2.5rem;  font-size: 0.875rem; }
+  .avatar-lg  { width: 3rem;    height: 3rem;    font-size: 1rem; }
+  .avatar-xl  { width: 4rem;    height: 4rem;    font-size: 1.25rem; }
+
+  /* ─── Online Status Dot ──────────────────────── */
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--background);
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
+
+  .status-dot.online  { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
+  .status-dot.offline { background: #6b7280; }
+  .status-dot.away    { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
+
+  /* ─── Read Receipt ───────────────────────────── */
+  .read-receipt {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+  }
+
+  .read-receipt.read   { color: #818cf8; opacity: 1; }
+  .read-receipt.sent   { color: rgba(255,255,255,0.5); }
+
+  /* ─── Message Reaction Pill ──────────────────── */
+  .reaction-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .reaction-pill:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.4);
+    transform: scale(1.1);
+  }
+
+  .reaction-pill.active {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+  }
+
+  /* ─── Notification Badge ─────────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--bg-image-premium-gradient);
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ─── Sidebar Item ───────────────────────────── */
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.875rem;
+    border-radius: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .sidebar-item.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15));
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    color: white;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  }
+
+  .sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: var(--bg-image-premium-gradient);
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* ─── Search Bar ─────────────────────────────── */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.875rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.875rem;
+    transition: all 0.3s ease;
+  }
+
+  .search-bar:focus-within {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+  }
+
+  .search-bar input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--foreground);
+    font-size: 0.875rem;
+    width: 100%;
+  }
+
+  .search-bar input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* ─── Divider ────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    margin: 0.5rem 0;
+  }
+
+  /* ─── Glow Text ──────────────────────────────── */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 40px rgba(139, 92, 246, 0.3);
+  }
+
+  /* ─── Gradient Text ──────────────────────────── */
+  .text-gradient {
+    background: var(--bg-image-premium-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ─── Shimmer Loading ────────────────────────── */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.03) 25%,
+      rgba(255,255,255,0.08) 50%,
+      rgba(255,255,255,0.03) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmerMove 1.5s infinite;
+    border-radius: 0.75rem;
+  }
+
+  /* ─── Chat Input Bar ─────────────────────────── */
+  .chat-input-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.25rem;
+    transition: all 0.3s ease;
+  }
+
+  .chat-input-bar:focus-within {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08), 0 0 20px rgba(99, 102, 241, 0.05);
+  }
+
+  .chat-input-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--foreground);
+    font-size: 0.9rem;
+  }
+
+  .chat-input-bar input::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+  }
+
+  /* ─── Icon Button ────────────────────────────── */
+  .icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+  }
+
+  .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .icon-btn.primary:hover {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+  }
+
+  /* ─── Send Button ────────────────────────────── */
+  .send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: var(--bg-image-premium-gradient);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  }
+
+  .send-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+  }
+
+  .send-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* ─── User Card (Friend/Search) ──────────────── */
+  .user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+
+  .user-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(99, 102, 241, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  /* ─── Tab Pills ──────────────────────────────── */
+  .tab-pill {
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid transparent;
+  }
+
+  .tab-pill:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .tab-pill.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2));
+    border-color: rgba(99, 102, 241, 0.3);
+    color: white;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+  }
+
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ─── Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
+  transition: background 0.2s;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.35); }
+
+/* ─── Animations ─────────────────────────────────── */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0);    opacity: 0.5; }
+  30%            { transform: translateY(-5px); opacity: 1; }
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: .5; }
+  50%       { opacity: 0.5; }
 }
+
+@keyframes shimmerMove {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes badgePop {
+  0%   { transform: scale(0); opacity: 0; }
+  70%  { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+  50%       { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
+}
+
+@keyframes meshFloat {
+  0%, 100% { background-position: 0% 0%, 100% 0%, 60% 100%, 0% 70%; }
+  50%       { background-position: 5% 5%, 95% 5%, 55% 95%, 5% 65%; }
+}
+
+/* ─── Animation Utility Classes ──────────────────── */
+.animate-fade-in-up    { animation: fadeInUp    0.4s ease forwards; }
+.animate-fade-in-scale { animation: fadeInScale 0.3s ease forwards; }
+.animate-slide-left    { animation: slideInLeft 0.35s ease forwards; }
+.animate-slide-right   { animation: slideInRight 0.35s ease forwards; }
+.animate-glow-pulse    { animation: glowPulse   2s ease-in-out infinite; }
+
+/* ─── Stagger Delays ─────────────────────────────── */
+.delay-75  { animation-delay: 75ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-225 { animation-delay: 225ms; }
+.delay-300 { animation-delay: 300ms; }
