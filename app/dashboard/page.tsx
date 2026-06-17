@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   collection, 
-  getDocs, 
   query, 
   where, 
   onSnapshot,
@@ -17,10 +17,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { UserCard } from "@/components/UserCard";
 import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import gsap from "gsap";
 
 export default function DashboardPage() {
   const { profile, user: authUser } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"all" | "friends" | "requests">("all");
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,7 +32,6 @@ export default function DashboardPage() {
       return;
     }
 
-    // Real-time listener for all users
     const q = query(collection(db, "users"), where("userId", "!=", authUser.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -46,7 +45,6 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [authUser]);
 
-  // Social Actions
   const handleAddFriend = async (targetId: string) => {
     if (!authUser) return;
     try {
@@ -116,7 +114,7 @@ export default function DashboardPage() {
             onClick={() => setActiveTab(tab)}
             className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-300 capitalize ${
               activeTab === tab 
-                ? "bg-premium-gradient text-white shadow-lg active-tab" 
+                ? "bg-premium-gradient text-white shadow-lg" 
                 : "text-foreground/40 hover:text-foreground hover:bg-glass-100"
             }`}
           >
@@ -131,7 +129,7 @@ export default function DashboardPage() {
           <p className="text-foreground/40 font-medium font-mono animate-pulse">Synchronizing Network...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
           {filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
               <UserCard
@@ -144,7 +142,7 @@ export default function DashboardPage() {
                 onAdd={() => handleAddFriend(user.userId)}
                 onAccept={() => handleAcceptFriend(user.userId)}
                 onReject={() => handleRejectFriend(user.userId)}
-                onMessage={() => alert("Message flow in next task!")}
+                onMessage={() => router.push(`/dashboard/chat/${user.userId}`)}
               />
             ))
           ) : (
