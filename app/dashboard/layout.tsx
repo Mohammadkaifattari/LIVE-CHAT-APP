@@ -83,9 +83,11 @@ export default function DashboardLayout({
       </div>
 
       {/* ── Main content ── */}
-      <main className="flex-1 h-full overflow-hidden relative">
-        {children}
-      </main>
+     <main className="flex-1 h-full overflow-hidden relative">
+  <div className="h-full pt-14 md:pt-0 overflow-hidden">
+    {children}
+  </div>
+</main>
     </div>
   );
 }
