@@ -258,11 +258,16 @@ export default function PrivateChatPage() {
   };
 
   if (!friend) return (
-    <div className="h-full flex items-center justify-center">
+    <div className="h-full flex flex-col items-center justify-center gap-4">
       <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <button
+        onClick={() => router.push("/dashboard/chat")}
+        className="text-xs text-white/30 hover:text-white/60 transition-all"
+      >
+        ← Back to chats
+      </button>
     </div>
   );
-
   return (
     <div className="flex flex-col h-full bg-background/50 overflow-hidden">
 
