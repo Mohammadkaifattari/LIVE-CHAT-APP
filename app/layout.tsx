@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning={true}>
+  <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning={true} className="dark">
       <body className={`${inter.variable} ${outfit.variable} font-sans`}>
         <AuthProvider>
           {children}

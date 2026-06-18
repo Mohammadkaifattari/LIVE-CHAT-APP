@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -9,8 +9,7 @@ import {
   Bell,
   LogOut,
   MessageCircle,
-  Sun,
-  Moon,
+ 
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
@@ -23,26 +22,6 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-function useTheme() {
-  const [dark, setDark] = React.useState(true);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    const isDark = saved ? saved === "dark" : true;
-    setDark(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
-  }, []);
-
-  const toggle = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  };
-
-  return { dark, toggle };
-}
-
 interface SidebarProps {
   onNavigate?: () => void;
 }
@@ -52,7 +31,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const router = useRouter();
   const { profile } = useAuth();
   const sidebarRef = useRef<HTMLElement>(null);
-  const { dark, toggle } = useTheme();
+  const [dark, setDark] = useState(true);
 
   const navItems = [
     { name: "Friends",       href: "/dashboard",               icon: Users },
@@ -60,6 +39,24 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
   ];
 
+  // Init theme from localStorage
+  
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    if (next) {
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.add("light");
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  // GSAP entry
   useEffect(() => {
     if (sidebarRef.current) {
       gsap.fromTo(
@@ -84,7 +81,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
       ref={sidebarRef}
       className="w-64 h-screen flex flex-col bg-[#0d0d1a] border-r border-white/5 z-50 overflow-hidden"
     >
-      {/* ── Logo ── */}
+      {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-6 border-b border-white/5">
         <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/25">
           <MessageCircle className="text-white w-5 h-5" />
@@ -94,7 +91,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         </span>
       </div>
 
-      {/* ── Nav ── */}
+      {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
@@ -120,7 +117,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         })}
       </nav>
 
-      {/* ── Bottom ── */}
+      {/* Bottom */}
       <div className="px-3 py-4 border-t border-white/5 space-y-1">
 
         {/* User info */}
@@ -137,17 +134,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
         </div>
 
         {/* Theme toggle */}
-        <button
-          onClick={toggle}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/40 hover:bg-white/5 hover:text-white/80 transition-all group"
-        >
-          {dark ? (
-            <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
-          ) : (
-            <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform duration-300" />
-          )}
-          <span className="text-sm font-medium">{dark ? "Light Mode" : "Dark Mode"}</span>
-        </button>
+        
 
         {/* Logout */}
         <button

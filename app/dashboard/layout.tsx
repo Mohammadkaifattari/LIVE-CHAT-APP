@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Sidebar } from "@/components/Sidebar";
 import { Menu, X } from "lucide-react";
-
+import { setUserOnline, setUserOffline } from "@/lib/firebase";
 export default function DashboardLayout({
   children,
 }: {
@@ -24,9 +24,24 @@ export default function DashboardLayout({
   }, [user, loading, router]);
 
   // Close drawer on route change
+  // Close drawer on route change
+  const prevPathname = useRef(pathname);
   useEffect(() => {
-    setDrawerOpen(false);
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname;
+      setDrawerOpen(false);
+    }
   }, [pathname]);
+
+  useEffect(() => {
+    if (!user) return;
+    setUserOnline(user.uid);
+    window.addEventListener("beforeunload", () => setUserOffline(user.uid));
+    return () => {
+      setUserOffline(user.uid);
+      window.removeEventListener("beforeunload", () => setUserOffline(user.uid));
+    };
+  }, [user]);
 
   if (loading) {
     return (

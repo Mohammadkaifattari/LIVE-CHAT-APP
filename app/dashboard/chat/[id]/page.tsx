@@ -29,6 +29,7 @@ export default function PrivateChatPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
 
   // ── Typing indicator state ──
   const [isFriendTyping, setIsFriendTyping] = useState(false);
@@ -50,13 +51,20 @@ export default function PrivateChatPage() {
 
   // ── Fetch friend ──
   useEffect(() => {
+     if (!friendId) return;
+    const unsub = onSnapshot(doc(db, "presence", friendId as string), (snap) => {
+      setIsOnline(snap.data()?.online === true);
+    });
+    return () => unsub();
+  }, [friendId]);
+// ── Fetch friend data ──
+  useEffect(() => {
     if (!friendId) return;
     getDoc(doc(db, "users", friendId as string)).then((snap) => {
       if (snap.exists()) setFriend({ id: snap.id, ...snap.data() });
       else router.push("/dashboard/chat");
     });
   }, [friendId, router]);
-
   // ── Real-time messages ──
   useEffect(() => {
     if (!authUser || !roomId) return;
@@ -164,10 +172,10 @@ useEffect(() => {
   if (messages.length === 0) return;
   const lastMsg = messages[messages.length - 1];
   if (lastMsg.senderId !== authUser?.uid) {
-    fetchAiSuggestions();
+    const timer = setTimeout(() => fetchAiSuggestions(), 0);
+    return () => clearTimeout(timer);
   }
-}, [messages.length]);
-
+}, [messages.length, fetchAiSuggestions]);
 
 
   // ── Scroll to bottom ──
@@ -237,17 +245,21 @@ useEffect(() => {
             <div className="w-10 h-10 bg-premium-gradient rounded-xl flex items-center justify-center text-white font-bold">
               {friend.UserName?.[0]?.toUpperCase()}
             </div>
-            <span className="status-dot online absolute -bottom-0.5 -right-0.5" />
+            <span className={`status-dot ${isOnline ? "online" : "offline"} absolute -bottom-0.5 -right-0.5`} />
           </div>
           <div>
             <h3 className="font-semibold text-lg">{friend.UserName}</h3>
             <p className="text-[10px] text-foreground/40 font-mono">
               {isFriendTyping ? (
                 <span className="text-primary animate-pulse">typing...</span>
-              ) : (
+             ) : isOnline ? (
                 <span className="text-green-500 font-bold uppercase tracking-widest flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block animate-pulse" />
                   Active Now
+                </span>
+              ) : (
+                <span className="text-white/30 uppercase tracking-widest">
+                  Offline
                 </span>
               )}
             </p>

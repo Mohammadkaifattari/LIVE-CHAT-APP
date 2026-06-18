@@ -188,9 +188,9 @@ export default function ChatListPage() {
           let unreadCount = 0;
 
           try {
-            const msgsQ = query(
+           const msgsQ = query(
               collection(db, "chats", roomId, "messages"),
-              orderBy("createdAt", "desc"),
+              orderBy("timestamp", "desc"),
               limit(1)
             );
             await new Promise<void>((resolve) => {
@@ -198,7 +198,7 @@ export default function ChatListPage() {
                 if (!msgSnap.empty) {
                   const msgData = msgSnap.docs[0].data();
                   lastMessage = msgData.text ?? "";
-                  lastMessageTime = msgData.createdAt?.toDate?.() ?? null;
+                  lastMessageTime = msgData.timestamp?.toDate?.() ?? null;
                 }
                 unsub();
                 resolve();

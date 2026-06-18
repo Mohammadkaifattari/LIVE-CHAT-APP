@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCEmsA8IMFXCxJlMobeK4AGxDatqsuRDgo",
@@ -15,3 +15,17 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export default app;
+
+export const setUserOnline = async (uid: string) => {
+  await setDoc(doc(db, "presence", uid), {
+    online: true,
+    lastSeen: serverTimestamp(),
+  });
+};
+
+export const setUserOffline = async (uid: string) => {
+  await setDoc(doc(db, "presence", uid), {
+    online: false,
+    lastSeen: serverTimestamp(),
+  });
+};
