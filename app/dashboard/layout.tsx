@@ -21,10 +21,7 @@ export default function DashboardLayout({
     }
   }, [user, loading, router]);
 
-  // Close drawer on route change
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, []);
+  
 
   if (loading) {
     return (
@@ -45,7 +42,7 @@ export default function DashboardLayout({
       {/* ── Mobile hamburger button ── */}
       <button
         onClick={() => setDrawerOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 icon-btn p-2.5"
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl bg-glass-100 border border-glass-border backdrop-blur-md text-foreground shadow-lg"
         aria-label="Open menu"
       >
         <Menu className="w-5 h-5" />
@@ -84,7 +81,7 @@ export default function DashboardLayout({
       </div>
 
       {/* ── Main content ── */}
-      <main className="flex-1 h-full overflow-hidden relative">
+      <main className="flex-1 h-full overflow-hidden relative md:ml-0 pt-16 md:pt-0">
         <div className="absolute top-0 left-0 w-full h-[30%] bg-gradient-to-b from-primary/5 to-transparent pointer-events-none -z-10" />
         {children}
       </main>
