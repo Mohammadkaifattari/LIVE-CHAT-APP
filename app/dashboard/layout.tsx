@@ -1,31 +1,24 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Sidebar } from "@/components/Sidebar";
-import { Menu, X } from "lucide-react";
+import { X } from "lucide-react";
 import { setUserOnline, setUserOffline } from "@/lib/firebase";
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { drawerOpen, setDrawerOpen } = useSidebar();
+  const prevPathname = useRef(pathname);
 
-  // Auth guard
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth/login");
-    }
+    if (!loading && !user) router.push("/auth/login");
   }, [user, loading, router]);
 
-  // Close drawer on route change
-  // Close drawer on route change
-  const prevPathname = useRef(pathname);
   useEffect(() => {
     if (prevPathname.current !== pathname) {
       prevPathname.current = pathname;
@@ -59,33 +52,21 @@ export default function DashboardLayout({
   return (
     <div className="flex h-[100dvh] bg-[#09090b] text-foreground overflow-hidden">
 
-      {/* ── Mobile hamburger ── */}
-      <button
-        onClick={() => setDrawerOpen(true)}
-        className="md:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-xl bg-white/8 border border-white/10 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-white hover:bg-white/12 transition-all shadow-lg"
-        aria-label="Open menu"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
-
-      {/* ── Backdrop ── */}
+      {/* Backdrop */}
       {drawerOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40 animate-fade-in-scale"
+          className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
           onClick={() => setDrawerOpen(false)}
         />
       )}
 
-      {/* ── Sidebar — desktop static, mobile drawer ── */}
-      <div
-        className={`
-          fixed md:static inset-y-0 left-0 z-50
-          transform transition-transform duration-300 ease-in-out
-          ${drawerOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0
-        `}
-      >
-        {/* Close button inside drawer on mobile */}
+      {/* Sidebar */}
+      <div className={`
+        fixed md:static inset-y-0 left-0 z-50
+        transform transition-transform duration-300 ease-in-out
+        ${drawerOpen ? "translate-x-0" : "-translate-x-full"}
+        md:translate-x-0
+      `}>
         {drawerOpen && (
           <button
             onClick={() => setDrawerOpen(false)}
@@ -97,12 +78,18 @@ export default function DashboardLayout({
         <Sidebar onNavigate={() => setDrawerOpen(false)} />
       </div>
 
-      {/* ── Main content ── */}
-     <main className="flex-1 h-full overflow-hidden relative">
-  <div className="h-full pt-14 md:pt-0 overflow-hidden">
-    {children}
-  </div>
-</main>
+      {/* Main content — no padding top */}
+      <main className="flex-1 h-full overflow-hidden relative">
+        {children}
+      </main>
     </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <DashboardContent>{children}</DashboardContent>
+    </SidebarProvider>
   );
 }

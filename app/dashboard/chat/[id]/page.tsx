@@ -15,10 +15,11 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { Send, ChevronLeft, MoreVertical, Phone, Video, Sparkles, ImagePlus, X } from "lucide-react";
+import { Send, ChevronLeft, MoreVertical, Phone, Video, Sparkles, ImagePlus, X, Menu } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { useSidebar } from "@/context/SidebarContext";
 
 const EMOJI_LIST = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
@@ -27,6 +28,7 @@ const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
 export default function PrivateChatPage() {
   const { id: friendId } = useParams();
   const { user: authUser } = useAuth();
+  const { setDrawerOpen } = useSidebar();
 
   const [friend, setFriend] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -189,7 +191,6 @@ export default function PrivateChatPage() {
     e.preventDefault();
     if (!authUser || !roomId) return;
 
-    // Image send
     if (imageFile) {
       setUploading(true);
       try {
@@ -267,16 +268,33 @@ export default function PrivateChatPage() {
 
       {/* Header */}
       <header className="sticky top-0 p-4 border-b border-glass-border flex items-center justify-between glass-card !rounded-none z-30">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push("/dashboard/chat")} className="md:hidden icon-btn p-1.5">
+        <div className="flex items-center gap-3">
+
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="md:hidden icon-btn p-1.5"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          {/* Back button */}
+          <button
+            onClick={() => router.push("/dashboard/chat")}
+            className="icon-btn p-1.5"
+          >
             <ChevronLeft className="w-5 h-5" />
           </button>
+
+          {/* Avatar */}
           <div className="relative">
             <div className="w-10 h-10 bg-premium-gradient rounded-xl flex items-center justify-center text-white font-bold">
               {friend.UserName?.[0]?.toUpperCase()}
             </div>
             <span className={`status-dot ${isOnline ? "online" : "offline"} absolute -bottom-0.5 -right-0.5`} />
           </div>
+
+          {/* Name & status */}
           <div>
             <h3 className="font-semibold text-lg">{friend.UserName}</h3>
             <p className="text-[10px] text-foreground/40 font-mono">
@@ -293,6 +311,7 @@ export default function PrivateChatPage() {
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <Button variant="glass" className="p-2 aspect-square hidden sm:flex">
             <Phone className="w-4 h-4 text-foreground/40" />
@@ -331,33 +350,30 @@ export default function PrivateChatPage() {
                   onMouseLeave={() => setHoveredMsg(null)}
                   onTouchStart={() => setHoveredMsg(hoveredMsg === msg.id ? null : msg.id)}
                 >
-                  <div className="relative group">
+                  <div className="relative group max-w-[85%] md:max-w-[70%]">
+
                     {/* Emoji picker */}
                     {hoveredMsg === msg.id && (
                       <div className={`absolute ${isMe ? "right-0" : "left-0"} -top-10 z-[100] flex items-center gap-1 px-2 py-1.5 rounded-full bg-[#1a1a2e] border border-white/10 shadow-xl`}>
-                       {EMOJI_LIST.map((emoji) => (
-  <button
-    key={emoji}
-    onTouchStart={(e) => e.stopPropagation()}
-    onClick={(e) => {
-      e.stopPropagation();
-      handleReaction(msg.id, emoji);
-    }}
-    className={`text-base hover:scale-125 transition-transform ${myReaction === emoji ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
-  >
-    {emoji}
-  </button>
-))}
+                        {EMOJI_LIST.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); handleReaction(msg.id, emoji); }}
+                            className={`text-base hover:scale-125 transition-transform ${myReaction === emoji ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
                       </div>
                     )}
 
                     {/* Bubble */}
-                    <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl shadow-sm text-sm overflow-hidden ${
+                    <div className={`w-full rounded-2xl shadow-sm text-sm overflow-hidden ${
                       isMe
                         ? "bg-premium-gradient text-white rounded-tr-none"
                         : "glass-card !bg-glass-100 rounded-tl-none border-glass-border"
                     }`}>
-                      {/* Image message */}
                       {msg.imageUrl && (
                         <img
                           src={msg.imageUrl}
@@ -366,13 +382,11 @@ export default function PrivateChatPage() {
                           onClick={() => window.open(msg.imageUrl, "_blank")}
                         />
                       )}
-                      {/* Text message */}
                       {msg.text && (
                         <div className="px-4 py-3">
-                          <p className="leading-relaxed break-words">{msg.text}</p>
+                          <p className="leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
                         </div>
                       )}
-                      {/* Timestamp */}
                       <div className={`px-4 pb-2 text-[10px] flex items-center gap-1 opacity-50 ${isMe ? "justify-end" : "justify-start"}`}>
                         {msg.timestamp?.toDate
                           ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -391,23 +405,20 @@ export default function PrivateChatPage() {
                     {/* Reaction pills */}
                     {Object.keys(reactionSummary).length > 0 && (
                       <div className={`flex gap-1 mt-1 flex-wrap ${isMe ? "justify-end" : "justify-start"}`}>
-                      {Object.entries(reactionSummary).map(([emoji, count]) => (
-  <button
-    key={emoji}
-    onTouchStart={(e) => e.stopPropagation()}
-    onClick={(e) => {
-      e.stopPropagation();
-      handleReaction(msg.id, emoji);
-    }}
-    className={`text-xs px-2 py-0.5 rounded-full border transition-all ${
-      myReaction === emoji
-        ? "bg-violet-500/20 border-violet-500/40 text-white"
-        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
-    }`}
-  >
-    {emoji} {count > 1 ? count : ""}
-  </button>
-))}
+                        {Object.entries(reactionSummary).map(([emoji, count]) => (
+                          <button
+                            key={emoji}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); handleReaction(msg.id, emoji); }}
+                            className={`text-xs px-2 py-0.5 rounded-full border transition-all ${
+                              myReaction === emoji
+                                ? "bg-violet-500/20 border-violet-500/40 text-white"
+                                : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                            }`}
+                          >
+                            {emoji} {count > 1 ? count : ""}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
