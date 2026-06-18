@@ -3,7 +3,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 
 interface UserProfile {
   uid: string;
@@ -34,31 +34,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      
-      if (user) {
-        // Real-time listener for user profile
-        unsubscribeProfile = onSnapshot(doc(db, "users", user.uid), (userDoc) => {
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            setProfile({
-              uid: user.uid,
-              email: user.email,
-              userName: data.UserName || "User",
-              friends: data.friends || [],
-              friendRequests: data.friendRequest || [],
-              sentRequests: data.sendrequest || [],
-            });
-          } else {
-            console.warn("User profile document not found in Firestore.");
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
+      if (firebaseUser) {
+        const userRef = doc(db, "users", firebaseUser.uid);
+
+        unsubscribeProfile = onSnapshot(
+          userRef,
+          async (userDoc) => {
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              setProfile({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                userName: data.UserName || firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+                friends: data.friends || [],
+                friendRequests: data.friendRequest || [],
+                sentRequests: data.sendrequest || [],
+              });
+            } else {
+              // Google login ke baad doc abhi nahi bana — khud bana do
+              await setDoc(userRef, {
+                userId: firebaseUser.uid,
+                email: firebaseUser.email,
+                UserName: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+                friends: [],
+                friendRequest: [],
+                sendrequest: [],
+                createdAt: serverTimestamp(),
+              });
+            }
+            setLoading(false);
+          },
+          (error) => {
+            // Permissions error silently ignore karo — logout state mein hota hai
+            if (error.code !== "permission-denied") {
+              console.error("Profile listener error:", error);
+            }
             setProfile(null);
+            setLoading(false);
           }
-          setLoading(false);
-        }, (error) => {
-          console.error("Profile listener error:", error);
-          setLoading(false);
-        });
+        );
       } else {
         setProfile(null);
         setLoading(false);
