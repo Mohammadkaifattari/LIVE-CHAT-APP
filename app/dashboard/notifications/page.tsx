@@ -1,5 +1,5 @@
 "use client";
-
+import { Bell, UserCheck, UserX, Users, Menu } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import {
   collection,
@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, UserCheck, UserX, Users } from "lucide-react";
+import { useSidebar } from "@/context/SidebarContext";
 import gsap from "gsap";
 
 interface Requester {
@@ -117,11 +117,19 @@ export default function NotificationsPage() {
     }
   };
 
+  const { setDrawerOpen } = useSidebar();
+
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-center">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="md:hidden w-9 h-9 rounded-xl bg-white/5 border border-white/8 flex items-center justify-center text-white/60 hover:text-white transition-all flex-shrink-0"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-center hidden md:flex">
           <Bell className="w-5 h-5 text-white/50" />
         </div>
         <div>

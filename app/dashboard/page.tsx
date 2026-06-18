@@ -1,5 +1,6 @@
 "use client";
-
+import { Search, Loader2, Menu } from "lucide-react";
+import { useSidebar } from "@/context/SidebarContext";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
@@ -15,7 +16,7 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { UserCard } from "@/components/UserCard";
-import { Search, Loader2 } from "lucide-react";
+
 import { Input } from "@/components/ui/Input";
 
 export default function DashboardPage() {
@@ -89,12 +90,22 @@ export default function DashboardPage() {
     return false;
   });
 
+  const { setDrawerOpen } = useSidebar();
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-bold font-outfit tracking-tight">Social Network</h1>
-          <p className="text-foreground/40 font-medium">Connect and grow your premium circle</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="md:hidden w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold font-outfit tracking-tight">Social Network</h1>
+            <p className="text-foreground/40 font-medium">Connect and grow your premium circle</p>
+          </div>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/40" />

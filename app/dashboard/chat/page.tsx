@@ -13,7 +13,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
-import { MessageSquare, Search, MessageCircle, Users } from "lucide-react";
+import { MessageSquare, Search, MessageCircle, Users, Menu } from "lucide-react";
+import { useSidebar } from "@/context/SidebarContext";
 import { Input } from "@/components/ui/Input";
 import Link from "next/link";
 import { gsap } from "gsap";
@@ -128,6 +129,7 @@ function ConversationRow({ item }: { item: ConversationItem }) {
 
 export default function ChatListPage() {
   const { profile, user: authUser } = useAuth();
+  const { setDrawerOpen } = useSidebar();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -271,6 +273,12 @@ export default function ChatListPage() {
         <div className="p-5 space-y-4 border-b border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="md:hidden w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+              >
+                <Menu className="w-4 h-4" />
+              </button>
               <h2 className="text-xl font-bold text-white font-outfit tracking-tight">
                 Messages
               </h2>
