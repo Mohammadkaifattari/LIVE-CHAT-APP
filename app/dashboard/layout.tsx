@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Sidebar } from "@/components/Sidebar";
 import { Menu, X } from "lucide-react";
@@ -13,22 +13,27 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Auth guard
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth/login");
     }
   }, [user, loading, router]);
 
-  
+  // Close drawer on route change
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="h-screen w-full flex items-center justify-center bg-[#09090b]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <span className="text-muted text-sm font-medium animate-pulse">Loading...</span>
+          <div className="w-10 h-10 border-2 border-violet-500/20 border-t-violet-500 rounded-full animate-spin" />
+          <span className="text-white/30 text-sm font-medium">Loading...</span>
         </div>
       </div>
     );
@@ -37,38 +42,26 @@ export default function DashboardLayout({
   if (!user) return null;
 
   return (
-    <div className="flex h-[100dvh] bg-background text-foreground overflow-hidden">
-      
-      {/* ── Mobile hamburger button ── */}
+    <div className="flex h-[100dvh] bg-[#09090b] text-foreground overflow-hidden">
+
+      {/* ── Mobile hamburger ── */}
       <button
         onClick={() => setDrawerOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-xl bg-glass-100 border border-glass-border backdrop-blur-md text-foreground shadow-lg"
+        className="md:hidden fixed top-3 left-3 z-50 w-10 h-10 rounded-xl bg-white/8 border border-white/10 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-white hover:bg-white/12 transition-all shadow-lg"
         aria-label="Open menu"
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      {/* ── Mobile drawer backdrop ── */}
+      {/* ── Backdrop ── */}
       {drawerOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in-up"
+          className="md:hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-40 animate-fade-in-scale"
           onClick={() => setDrawerOpen(false)}
         />
       )}
 
-      {/* ── Mobile drawer close button ── */}
-      {drawerOpen && (
-        <button
-          onClick={() => setDrawerOpen(false)}
-          className="md:hidden fixed top-4 left-[232px] z-[60] icon-btn p-2"
-          aria-label="Close menu"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* ── Sidebar ── */}
-      {/* Desktop: always visible | Mobile: drawer */}
+      {/* ── Sidebar — desktop static, mobile drawer ── */}
       <div
         className={`
           fixed md:static inset-y-0 left-0 z-50
@@ -77,12 +70,20 @@ export default function DashboardLayout({
           md:translate-x-0
         `}
       >
+        {/* Close button inside drawer on mobile */}
+        {drawerOpen && (
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="md:hidden absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-white/8 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         <Sidebar onNavigate={() => setDrawerOpen(false)} />
       </div>
 
       {/* ── Main content ── */}
-      <main className="flex-1 h-full overflow-hidden relative md:ml-0 pt-16 md:pt-0">
-        <div className="absolute top-0 left-0 w-full h-[30%] bg-gradient-to-b from-primary/5 to-transparent pointer-events-none -z-10" />
+      <main className="flex-1 h-full overflow-hidden relative">
         {children}
       </main>
     </div>
