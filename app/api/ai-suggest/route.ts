@@ -6,9 +6,7 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({
-        suggestions: ["Sounds good! 👍", "Tell me more", "That's interesting!"],
-      });
+      return NextResponse.json({ suggestions: [] });
     }
 
     const response = await fetch(
@@ -21,24 +19,27 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
-          max_tokens: 100,
+          max_tokens: 150,
           messages: [
             {
               role: "system",
-              content: `You are a smart reply suggestion assistant for a chat app.
-The conversation below shows messages between two people.
-Messages with role "assistant" are sent BY THE USER (me).
-Messages with role "user" are sent BY THE OTHER PERSON (friend).
-Your job: suggest 3 short replies that I should send in response to my friend's LAST message.
+              content: `You are a witty, natural smart reply assistant for a casual chat app.
+Messages with role "assistant" = sent by ME. Messages with role "user" = sent by MY FRIEND.
+Suggest 3 VERY DIFFERENT reply options for my friend's LAST message only.
+
 Rules:
-- Each reply max 6 words
-- Detect the language of the friend's last message and reply in THAT EXACT language
-- If Roman Urdu → Roman Urdu replies
-- If English → English replies
-- If Urdu script → Urdu script replies
-- If Hinglish → Hinglish replies
+- Make each reply feel DIFFERENT in tone: one casual, one funny, one thoughtful
+- Max 8 words each
+- NEVER use generic replies like "Sounds good", "Tell me more", "That's interesting", "Asalamualikum" unless friend literally said salam
+- Replies must be SPECIFIC to what the friend actually said or sent
+- Match the language exactly: Roman Urdu → Roman Urdu, English → English, Urdu → Urdu, Hinglish → Hinglish
+- Add emojis only when natural
+- If friend's last message is [shared an image]: suggest reactions to seeing an image e.g. ["nice pic! 😍", "wow kya cheez hai!", "aur bhejo 👀"]
+- If friend's last message is text AFTER an image: focus ONLY on that text, ignore the image
+- NEVER suggest greetings unless friend's last message IS a greeting
 - Return ONLY a JSON array of 3 strings, nothing else
-- Example: ["Theek hai yaar!", "Aa raha hoon", "Bilkul sahi"]`,
+- Bad: ["Sounds good!", "Tell me more", "That's interesting"]
+- Good (friend said "ye billi kasi he"): ["bohot cute hai yaar 😍", "teri he kya?", "naam kya rakha 😂"]`,
             },
             ...messages,
             {
@@ -58,8 +59,6 @@ Rules:
     return NextResponse.json({ suggestions });
   } catch (err) {
     console.error("AI suggest error:", err);
-    return NextResponse.json({
-      suggestions: ["Sounds good!", "Tell me more", "👍"],
-    });
+    return NextResponse.json({ suggestions: [] });
   }
 }
