@@ -25,6 +25,7 @@ interface FriendData {
   userId: string;
   UserName: string;
   email?: string;
+  profileImage?: string;
 }
 
 interface ConversationItem {
@@ -83,8 +84,12 @@ function ConversationRow({ item }: { item: ConversationItem }) {
     >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
-        <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-violet-500/20">
-          {initial}
+        <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-violet-500/20 overflow-hidden">
+          {item.friend.profileImage ? (
+            <img src={item.friend.profileImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            initial
+          )}
         </div>
         {/* Online dot */}
         <span
@@ -177,6 +182,7 @@ export default function ChatListPage() {
         userId: d.data().userId,
         UserName: d.data().UserName,
         email: d.data().email,
+        profileImage: d.data().profileImage || "",
       }));
 
       // 2) For each friend: fetch last message + unread count + online status

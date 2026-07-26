@@ -122,8 +122,12 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
 
         {/* User info */}
         <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0">
-            {profile?.userName?.[0]?.toUpperCase() ?? "?"}
+          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0 overflow-hidden">
+            {profile?.profileImage ? (
+              <img src={profile.profileImage} alt="" className="w-full h-full object-cover" />
+            ) : (
+              profile?.userName?.[0]?.toUpperCase() ?? "?"
+            )}
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold text-white/80 truncate">

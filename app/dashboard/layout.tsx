@@ -79,7 +79,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content — no padding top */}
-      <main className="flex-1 h-full overflow-hidden relative">
+      <main className="flex-1 h-full overflow-y-auto relative">
         {children}
       </main>
     </div>

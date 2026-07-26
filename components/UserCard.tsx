@@ -8,6 +8,7 @@ import { UserPlus, Check, X, MessageSquare } from "lucide-react";
 interface UserCardProps {
   name: string;
   email: string;
+  profileImage?: string;
   isFriend: boolean;
   isSent: boolean;
   hasRequest: boolean;
@@ -20,6 +21,7 @@ interface UserCardProps {
 export const UserCard: React.FC<UserCardProps> = ({
   name,
   email,
+  profileImage,
   isFriend,
   isSent,
   hasRequest,
@@ -33,8 +35,12 @@ export const UserCard: React.FC<UserCardProps> = ({
   return (
     <GlassCard className="flex flex-col gap-4 hover:border-primary/30 transition-colors group">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-premium-gradient flex items-center justify-center text-white font-bold text-lg shadow-lg">
-          {initial}
+        <div className="w-12 h-12 rounded-full bg-premium-gradient flex items-center justify-center text-white font-bold text-lg shadow-lg overflow-hidden">
+          {profileImage ? (
+            <img src={profileImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            initial
+          )}
         </div>
         <div className="flex flex-col overflow-hidden">
           <h3 className="font-semibold text-lg truncate">{name}</h3>

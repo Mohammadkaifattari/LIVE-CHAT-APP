@@ -21,6 +21,7 @@ interface Requester {
   userId: string;
   UserName: string;
   email?: string;
+  profileImage?: string;
 }
 
 export default function NotificationsPage() {
@@ -61,6 +62,7 @@ export default function NotificationsPage() {
         userId: d.data().userId,
         UserName: d.data().UserName,
         email: d.data().email,
+        profileImage: d.data().profileImage || "",
       }));
       setRequesters(data);
       setLoading(false);
@@ -159,8 +161,12 @@ export default function NotificationsPage() {
               className="flex items-center gap-4 p-4 rounded-2xl bg-white/4 border border-white/8 hover:bg-white/6 transition-all"
             >
               {/* Avatar */}
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-lg shadow-violet-500/20">
-                {r.UserName?.[0]?.toUpperCase()}
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-lg shadow-violet-500/20 overflow-hidden">
+                {r.profileImage ? (
+                  <img src={r.profileImage} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  r.UserName?.[0]?.toUpperCase()
+                )}
               </div>
 
               {/* Info */}

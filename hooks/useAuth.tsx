@@ -9,6 +9,7 @@ interface UserProfile {
   uid: string;
   email: string | null;
   userName: string;
+  profileImage: string;
   friends: string[];
   friendRequests: string[];
   sentRequests: string[];
@@ -54,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 userName: data.UserName || firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+                profileImage: data.profileImage || "",
                 friends: data.friends || [],
                 friendRequests: data.friendRequest || [],
                 sentRequests: data.sendrequest || [],
@@ -64,6 +66,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 userId: firebaseUser.uid,
                 email: firebaseUser.email,
                 UserName: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "User",
+                profileImage: "",
                 friends: [],
                 friendRequest: [],
                 sendrequest: [],

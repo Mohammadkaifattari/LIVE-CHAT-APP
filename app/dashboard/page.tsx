@@ -147,6 +147,7 @@ export default function DashboardPage() {
                 key={user.userId}
                 name={user.UserName}
                 email={user.email}
+                profileImage={user.profileImage}
                 isFriend={profile?.friends.includes(user.userId) || false}
                 isSent={profile?.sentRequests.includes(user.userId) || false}
                 hasRequest={profile?.friendRequests.includes(user.userId) || false}

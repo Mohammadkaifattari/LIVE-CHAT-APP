@@ -293,8 +293,12 @@ export default function PrivateChatPage() {
 
           {/* Avatar */}
           <div className="relative">
-            <div className="w-10 h-10 bg-premium-gradient rounded-xl flex items-center justify-center text-white font-bold">
-              {friend.UserName?.[0]?.toUpperCase()}
+            <div className="w-10 h-10 bg-premium-gradient rounded-xl flex items-center justify-center text-white font-bold overflow-hidden">
+              {friend.profileImage ? (
+                <img src={friend.profileImage} alt="" className="w-full h-full object-cover" />
+              ) : (
+                friend.UserName?.[0]?.toUpperCase()
+              )}
             </div>
             <span className={`status-dot ${isOnline ? "online" : "offline"} absolute -bottom-0.5 -right-0.5`} />
           </div>
