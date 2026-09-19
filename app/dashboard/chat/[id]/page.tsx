@@ -122,9 +122,10 @@ export default function PrivateChatPage() {
   const fetchAiSuggestions = useCallback(async () => {
     if (messages.length === 0) return;
     const context = messages.slice(-5).map((m) => ({
-      role: m.senderId === authUser?.uid ? "user" : "assistant",
-      content: m.text ?? "[image]",
+      role: m.senderId === authUser?.uid ? "assistant" : "user",
+      content: m.text?.trim() ? m.text : "[image]",
     }));
+
     try {
       const res = await fetch("/api/ai-suggest", {
         method: "POST",
@@ -132,7 +133,7 @@ export default function PrivateChatPage() {
         body: JSON.stringify({ messages: context }),
       });
       const data = await res.json();
-      setAiSuggestions(data.suggestions ?? []);
+      setAiSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
     } catch {
       setAiSuggestions([]);
     }
@@ -145,7 +146,7 @@ export default function PrivateChatPage() {
       const timer = setTimeout(() => fetchAiSuggestions(), 0);
       return () => clearTimeout(timer);
     }
-  }, [messages.length, fetchAiSuggestions]);
+  }, [messages.length, fetchAiSuggestions, authUser]);
 
   // ── Scroll ──
   useEffect(() => {

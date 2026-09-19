@@ -51,12 +51,33 @@ Rules:
       }
     );
 
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error("AI suggest failed:", response.status, errorBody);
+      return NextResponse.json({ suggestions: [] });
+    }
+
     const data = await response.json();
     const text = data.choices?.[0]?.message?.content ?? "[]";
-    const cleaned = text.replace(/```json|```/g, "").trim();
-    const suggestions = JSON.parse(cleaned);
+    const cleaned = text.replace(/```json|```/gi, "").trim();
 
-    return NextResponse.json({ suggestions });
+    let suggestions: unknown[] = [];
+    try {
+      suggestions = JSON.parse(cleaned);
+    } catch (err) {
+      console.error("AI suggest parse error:", err, cleaned);
+      return NextResponse.json({ suggestions: [] });
+    }
+
+    if (!Array.isArray(suggestions)) {
+      return NextResponse.json({ suggestions: [] });
+    }
+
+    const safeSuggestions = suggestions
+      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      .slice(0, 3);
+
+    return NextResponse.json({ suggestions: safeSuggestions });
   } catch (err) {
     console.error("AI suggest error:", err);
     return NextResponse.json({ suggestions: [] });
