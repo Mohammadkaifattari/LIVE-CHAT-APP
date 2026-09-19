@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  type AuthError,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -10,6 +13,28 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import Link from "next/link";
 import gsap from "gsap";
 import { MessageSquare } from "lucide-react";
+
+function getLoginErrorMessage(error: unknown) {
+  const code = (error as AuthError)?.code;
+
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/invalid-login-credentials":
+    case "auth/user-not-found":
+    case "auth/wrong-password":
+      return "Email ya password ghalat hai.";
+    case "auth/invalid-email":
+      return "Valid email address enter karein.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Thori dair baad dobara try karein.";
+    case "auth/user-disabled":
+      return "Yeh account disable hai.";
+    case "auth/network-request-failed":
+      return "Network issue hai. Internet check karke dobara try karein.";
+    default:
+      return "Login nahi ho saka. Dobara try karein.";
+  }
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -20,7 +45,8 @@ export default function LoginPage() {
   const cardRef = useRef(null);
 
   useEffect(() => {
-    gsap.fromTo(cardRef.current,
+    gsap.fromTo(
+      cardRef.current,
       { opacity: 0, y: 30, scale: 0.95 },
       { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }
     );
@@ -30,11 +56,15 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+      router.replace("/dashboard");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError(getLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -65,6 +95,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
             <Input
               label="Password"
@@ -73,6 +104,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
             {error && (
               <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs animate-shake">
