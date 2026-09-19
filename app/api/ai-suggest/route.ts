@@ -2,20 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 
 const MODEL_CANDIDATES = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"];
 
-function extractSuggestions(message: any): string[] {
-  const content = message?.content ?? message?.reasoning ?? "";
-  const text = String(content)
+function extractSuggestions(content: unknown): string[] {
+  const text = String(content ?? "")
     .replace(/<think>[\s\S]*?<\/think>/gi, "")
     .replace(/```(?:json)?/gi, "")
     .trim();
 
+  if (!text) return [];
+
   const candidates: unknown[] = [];
+
   try {
     candidates.push(JSON.parse(text));
   } catch {
     const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (match) {
-      try { candidates.push(JSON.parse(match[0])); } catch {}
+      try {
+        candidates.push(JSON.parse(match[0]));
+      } catch {
+        // ignore parse failure and keep trying
+      }
     }
   }
 
@@ -25,13 +31,17 @@ function extractSuggestions(message: any): string[] {
       : candidate && typeof candidate === "object"
         ? ((candidate as Record<string, unknown>).suggestions ?? (candidate as Record<string, unknown>).replies ?? [])
         : [];
+
     if (!Array.isArray(values)) continue;
+
     const suggestions = values
       .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
       .map((item) => item.trim())
       .slice(0, 3);
-    if (suggestions.length === 3) return suggestions;
+
+    if (suggestions.length > 0) return suggestions;
   }
+
   return [];
 }
 
@@ -41,8 +51,12 @@ export async function POST(req: NextRequest) {
     const messages = Array.isArray(body?.messages) ? body.messages : [];
     const apiKey = process.env.GROQ_API_KEY?.trim();
 
-    if (!apiKey || messages.length === 0) {
-      console.error("AI suggestions unavailable: missing key or messages");
+    if (!apiKey) {
+      console.error("AI suggestions unavailable: GROQ_API_KEY missing");
+      return NextResponse.json({ suggestions: [] });
+    }
+
+    if (messages.length === 0) {
       return NextResponse.json({ suggestions: [] });
     }
 
@@ -50,18 +64,21 @@ export async function POST(req: NextRequest) {
       try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
           cache: "no-store",
           body: JSON.stringify({
             model,
-            reasoning_effort: "low",
             temperature: 0.4,
-            max_completion_tokens: 300,
+            max_tokens: 160,
             response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",
-                content: "Return a JSON object in exactly this format: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}. Give exactly 3 short natural replies to the friend's latest message, maximum 8 words each, matching its language.",
+                content:
+                  "Return only a JSON object with exactly this shape: {\"suggestions\":[\"short reply 1\",\"short reply 2\",\"short reply 3\"]}. Keep each reply under 8 words and match the user's language.",
               },
               ...messages.slice(-6),
             ],
@@ -69,20 +86,31 @@ export async function POST(req: NextRequest) {
         });
 
         const raw = await response.text();
-        let data: any;
-        try { data = JSON.parse(raw); } catch { data = { raw }; }
+        let data: any = null;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = { raw };
+        }
 
         if (!response.ok) {
-          console.error("Groq suggestions failed", { model, status: response.status, error: data?.error ?? raw });
+          console.error("Groq suggestions failed", {
+            model,
+            status: response.status,
+            error: data?.error ?? raw,
+          });
           continue;
         }
 
-        const suggestions = extractSuggestions(data?.choices?.[0]?.message);
-        if (suggestions.length === 3) return NextResponse.json({ suggestions });
+        const suggestions = extractSuggestions(data?.choices?.[0]?.message?.content);
+        if (suggestions.length > 0) {
+          return NextResponse.json({ suggestions });
+        }
+
         console.error("Groq returned no parseable suggestions", {
           model,
-          finishReason: data?.choices?.[0]?.finish_reason,
           message: data?.choices?.[0]?.message,
+          raw,
         });
       } catch (error) {
         console.error("Groq request error", { model, error });
