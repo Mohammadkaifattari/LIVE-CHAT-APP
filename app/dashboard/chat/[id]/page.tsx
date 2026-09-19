@@ -49,12 +49,8 @@ export default function PrivateChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const roomId =
-    authUser && friendId
-      ? [authUser.uid, friendId as string].sort().join("_")
-      : null;
+  const roomId = authUser && friendId ? [authUser.uid, friendId as string].sort().join("_") : null;
 
-  // ── Presence ──
   useEffect(() => {
     if (!friendId) return;
     const unsub = onSnapshot(doc(db, "presence", friendId as string), (snap) => {
@@ -63,7 +59,6 @@ export default function PrivateChatPage() {
     return () => unsub();
   }, [friendId]);
 
-  // ── Fetch friend data ──
   useEffect(() => {
     if (!friendId) return;
     getDoc(doc(db, "users", friendId as string)).then((snap) => {
@@ -72,7 +67,6 @@ export default function PrivateChatPage() {
     });
   }, [friendId, router]);
 
-  // ── Real-time messages ──
   useEffect(() => {
     if (!authUser || !roomId) return;
     const q = query(collection(db, "chats", roomId, "messages"));
@@ -92,7 +86,6 @@ export default function PrivateChatPage() {
     return () => unsub();
   }, [authUser, roomId]);
 
-  // ── Typing listener ──
   useEffect(() => {
     if (!roomId || !friendId) return;
     const unsub = onSnapshot(doc(db, "typing", roomId), (snap) => {
@@ -101,7 +94,6 @@ export default function PrivateChatPage() {
     return () => unsub();
   }, [roomId, friendId]);
 
-  // ── Set typing ──
   const setTypingStatus = useCallback(async (isTyping: boolean) => {
     if (!roomId || !authUser) return;
     try {
@@ -109,7 +101,6 @@ export default function PrivateChatPage() {
     } catch {}
   }, [roomId, authUser]);
 
-  // ── Cleanup ──
   useEffect(() => {
     return () => {
       setTypingStatus(false);
@@ -118,11 +109,12 @@ export default function PrivateChatPage() {
     };
   }, [setTypingStatus]);
 
-  // ── AI suggestions ──
-  const fetchAiSuggestions = useCallback(async () => {
-    if (messages.length === 0) return;
-    const context = messages.slice(-5).map((m) => ({
-      role: m.senderId === authUser?.uid ? "assistant" : "user",
+  const fetchAiSuggestions = useCallback(async (currentMessages?: any[]) => {
+    const activeMessages = currentMessages ?? messages;
+    if (!authUser || activeMessages.length === 0) return;
+
+    const context = activeMessages.slice(-20).map((m) => ({
+      role: m.senderId === authUser.uid ? "assistant" : "user",
       content: m.text?.trim() ? m.text : "[image]",
     }));
 
@@ -140,20 +132,23 @@ export default function PrivateChatPage() {
   }, [messages, authUser]);
 
   useEffect(() => {
-    if (messages.length === 0) return;
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg.senderId !== authUser?.uid) {
-      const timer = setTimeout(() => fetchAiSuggestions(), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [messages.length, fetchAiSuggestions, authUser]);
+    if (!authUser || !lastMsg) return;
+    if (lastMsg.senderId === authUser.uid) return;
 
-  // ── Scroll ──
+    const timer = setTimeout(() => {
+      fetchAiSuggestions(messages);
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [messages, authUser, fetchAiSuggestions]);
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages, isFriendTyping]);
 
-  // ── GSAP ──
   useGSAP(
     () => {
       const els = messagesContainerRef.current?.querySelectorAll(".message-animate");
@@ -164,7 +159,6 @@ export default function PrivateChatPage() {
     { scope: messagesContainerRef, dependencies: [messages.length] }
   );
 
-  // ── Image select ──
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -174,7 +168,6 @@ export default function PrivateChatPage() {
     reader.readAsDataURL(file);
   };
 
-  // ── Upload to Cloudinary ──
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -187,7 +180,6 @@ export default function PrivateChatPage() {
     return data.secure_url;
   };
 
-  // ── Send message ──
   const handleSendMessage = async (e: React.FormEvent, text?: string) => {
     e.preventDefault();
     if (!authUser || !roomId) return;
@@ -233,7 +225,6 @@ export default function PrivateChatPage() {
     }
   };
 
-  // ── Reaction ──
   const handleReaction = async (msgId: string, emoji: string) => {
     if (!authUser || !roomId) return;
     const msgRef = doc(db, "chats", roomId, "messages", msgId);
@@ -249,50 +240,36 @@ export default function PrivateChatPage() {
     setHoveredMsg(null);
   };
 
-  // ── Input change ──
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputMessage(e.target.value);
     setTypingStatus(true);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => setTypingStatus(false), 2000);
-    setAiSuggestions([]);
   };
 
-  if (!friend) return (
-    <div className="h-full flex flex-col items-center justify-center gap-4">
-      <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-      <button
-        onClick={() => router.push("/dashboard/chat")}
-        className="text-xs text-white/30 hover:text-white/60 transition-all"
-      >
-        ← Back to chats
-      </button>
-    </div>
-  );
+  if (!friend) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4">
+        <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <button onClick={() => router.push("/dashboard/chat")} className="text-xs text-white/30 hover:text-white/60 transition-all">
+          ← Back to chats
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background/50 overflow-hidden">
-
-      {/* Header */}
       <header className="sticky top-0 p-4 border-b border-glass-border flex items-center justify-between glass-card !rounded-none z-30">
         <div className="flex items-center gap-3">
-
-          {/* Hamburger — mobile only */}
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="md:hidden icon-btn p-1.5"
-          >
+          <button onClick={() => setDrawerOpen(true)} className="md:hidden icon-btn p-1.5">
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Back button */}
-          <button
-            onClick={() => router.push("/dashboard/chat")}
-            className="icon-btn p-1.5"
-          >
+          <button onClick={() => router.push("/dashboard/chat")} className="icon-btn p-1.5">
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-          {/* Avatar */}
           <div className="relative">
             <div className="w-10 h-10 bg-premium-gradient rounded-xl flex items-center justify-center text-white font-bold overflow-hidden">
               {friend.profileImage ? (
@@ -304,7 +281,6 @@ export default function PrivateChatPage() {
             <span className={`status-dot ${isOnline ? "online" : "offline"} absolute -bottom-0.5 -right-0.5`} />
           </div>
 
-          {/* Name & status */}
           <div>
             <h3 className="font-semibold text-lg">{friend.UserName}</h3>
             <p className="text-[10px] text-foreground/40 font-mono">
@@ -335,7 +311,6 @@ export default function PrivateChatPage() {
         </div>
       </header>
 
-      {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
         {loading ? (
           <div className="h-full flex items-center justify-center">
@@ -361,8 +336,6 @@ export default function PrivateChatPage() {
                   onTouchStart={() => setHoveredMsg(hoveredMsg === msg.id ? null : msg.id)}
                 >
                   <div className="relative group max-w-[85%] md:max-w-[70%]">
-
-                    {/* Emoji picker */}
                     {hoveredMsg === msg.id && (
                       <div className={`absolute ${isMe ? "right-0" : "left-0"} -top-10 z-[100] flex items-center gap-1 px-2 py-1.5 rounded-full bg-[#1a1a2e] border border-white/10 shadow-xl`}>
                         {EMOJI_LIST.map((emoji) => (
@@ -378,12 +351,7 @@ export default function PrivateChatPage() {
                       </div>
                     )}
 
-                    {/* Bubble */}
-                    <div className={`w-full rounded-2xl shadow-sm text-sm overflow-hidden ${
-                      isMe
-                        ? "bg-premium-gradient text-white rounded-tr-none"
-                        : "glass-card !bg-glass-100 rounded-tl-none border-glass-border"
-                    }`}>
+                    <div className={`w-full rounded-2xl shadow-sm text-sm overflow-hidden ${isMe ? "bg-premium-gradient text-white rounded-tr-none" : "glass-card !bg-glass-100 rounded-tl-none border-glass-border"}`}>
                       {msg.imageUrl && (
                         <img
                           src={msg.imageUrl}
@@ -403,16 +371,12 @@ export default function PrivateChatPage() {
                           : "..."}
                         {isMe && (
                           <span className="ml-1">
-                            {msg.seen
-                              ? <span className="text-blue-300 text-[10px]">✓✓</span>
-                              : <span className="opacity-40 text-[10px]">✓✓</span>
-                            }
+                            {msg.seen ? <span className="text-blue-300 text-[10px]">✓✓</span> : <span className="opacity-40 text-[10px]">✓✓</span>}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Reaction pills */}
                     {Object.keys(reactionSummary).length > 0 && (
                       <div className={`flex gap-1 mt-1 flex-wrap ${isMe ? "justify-end" : "justify-start"}`}>
                         {Object.entries(reactionSummary).map(([emoji, count]) => (
@@ -420,11 +384,7 @@ export default function PrivateChatPage() {
                             key={emoji}
                             onTouchStart={(e) => e.stopPropagation()}
                             onClick={(e) => { e.stopPropagation(); handleReaction(msg.id, emoji); }}
-                            className={`text-xs px-2 py-0.5 rounded-full border transition-all ${
-                              myReaction === emoji
-                                ? "bg-violet-500/20 border-violet-500/40 text-white"
-                                : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
-                            }`}
+                            className={`text-xs px-2 py-0.5 rounded-full border transition-all ${myReaction === emoji ? "bg-violet-500/20 border-violet-500/40 text-white" : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"}`}
                           >
                             {emoji} {count > 1 ? count : ""}
                           </button>
@@ -436,7 +396,6 @@ export default function PrivateChatPage() {
               );
             })}
 
-            {/* Typing bubble */}
             {isFriendTyping && (
               <div className="flex justify-start message-animate">
                 <div className="glass-card !bg-glass-100 rounded-2xl rounded-tl-none px-4 py-3 border-glass-border">
@@ -452,7 +411,6 @@ export default function PrivateChatPage() {
         )}
       </div>
 
-      {/* AI chips */}
       {aiSuggestions.length > 0 && (
         <div className="px-4 pb-2 flex items-center gap-2 flex-wrap animate-fade-in-up">
           <Sparkles className="w-3.5 h-3.5 text-primary/60 flex-shrink-0" />
@@ -462,15 +420,11 @@ export default function PrivateChatPage() {
         </div>
       )}
 
-      {/* Image preview */}
       {imagePreview && (
         <div className="px-4 pb-2 flex items-center gap-3">
           <div className="relative">
             <img src={imagePreview} alt="preview" className="h-16 w-16 object-cover rounded-xl border border-white/10" />
-            <button
-              onClick={() => { setImagePreview(null); setImageFile(null); }}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
-            >
+            <button onClick={() => { setImagePreview(null); setImageFile(null); }} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
               <X className="w-3 h-3 text-white" />
             </button>
           </div>
@@ -478,24 +432,10 @@ export default function PrivateChatPage() {
         </div>
       )}
 
-      {/* Input */}
       <div className="p-4 bg-background/80 backdrop-blur-md border-t border-glass-border z-20">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageSelect}
-        />
-        <form
-          onSubmit={handleSendMessage}
-          className="glass-card flex items-center gap-3 p-1.5 focus-within:border-primary/30 transition-all max-w-5xl mx-auto"
-        >
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/5 transition-all flex-shrink-0"
-          >
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+        <form onSubmit={handleSendMessage} className="glass-card flex items-center gap-3 p-1.5 focus-within:border-primary/30 transition-all max-w-5xl mx-auto">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/5 transition-all flex-shrink-0">
             <ImagePlus className="w-5 h-5" />
           </button>
           <input
