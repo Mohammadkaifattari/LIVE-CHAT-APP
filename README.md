@@ -2,7 +2,7 @@
 
 # 💬 Live Chat App
 
-### Real-time premium chat experience — built with Next.js, Firebase & AI
+### Real-time premium chat experience — built with Next.js, Firebase, and AI smart replies
 
 [![Live Demo](https://img.shields.io/badge/Live_Demo-FF6A00?style=for-the-badge&logo=vercel&logoColor=white)](https://live-chat-app-red.vercel.app)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/muhammadkaif-dev)
@@ -14,17 +14,18 @@
 
 ## ✨ Features
 
-- 🔐 **Auth** — Email/Password + Google Sign-in via Firebase Auth
-- 👥 **Social Network** — Add friends, send/accept/reject requests, search users
-- 💬 **Real-time Private Chat** — Messages powered by Firestore `onSnapshot`
-- ✅ **Read Receipts** — ✓✓ blue = seen, grey = sent
-- ⌨️ **Typing Indicator** — Live typing status via Firestore
-- 🟢 **Online/Offline Status** — Real-time presence system
-- 🔔 **Unread Badge** — Violet pill counter on chat list
-- 🤖 **AI Smart Replies** — Groq API (llama-3.3-70b) suggests context-aware replies
-- 🌐 **Language-aware AI** — Roman Urdu, English, Urdu, Hinglish support
-- 🎨 **Glassmorphism UI** — Dark premium theme with GSAP animations
-- 📱 **Notifications Page** — Real-time friend request management
+- 🔐 Auth — Email/password + Google sign-in via Firebase Auth
+- 👥 Social network — add friends, accept/reject requests, search users
+- 💬 Real-time private chat — Firestore `onSnapshot` for live messaging
+- ✅ Read receipts — blue `✓✓` = seen, gray `✓✓` = sent
+- ⌨️ Typing indicator — real-time typing state via Firestore
+- 🟢 Online/offline presence — live user status system
+- 🔔 Unread badges — counters for new chats/requests
+- 🤖 AI smart replies — Groq-powered suggestions for chat replies
+- 🌐 Multi-language AI — supports English, Urdu, Roman Urdu, Hinglish
+- 🎨 Premium glassmorphism UI — dark theme with GSAP animations
+- 📱 Notifications dashboard — manage incoming friend requests
+- 🧠 Smart fallback handling — graceful fallback suggestions when Groq fails
 
 ---
 
@@ -36,7 +37,6 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![GSAP](https://img.shields.io/badge/GSAP-88CE02?style=for-the-badge&logo=greensock&logoColor=white)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-black?style=for-the-badge&logo=framer&logoColor=white)
 
 **Backend & Database**
 
@@ -51,36 +51,35 @@
 
 ## 🗂️ Project Structure
 
-```
+```bash
 app/
-├── layout.tsx               # AuthProvider + fonts
-├── template.tsx             # GSAP page transitions
-├── page.tsx                 # Redirect logic
+├── layout.tsx                    # App shell + providers
+├── template.tsx                  # GSAP transitions
+├── page.tsx                      # App entry redirect
 ├── auth/
-│   ├── login/page.tsx       # Email + Google login
-│   └── signup/page.tsx      # Email + Google signup
+│   ├── login/page.tsx            # Login UI
+│   └── signup/page.tsx           # Sign up UI
 ├── dashboard/
-│   ├── layout.tsx           # Auth guard + Sidebar
-│   ├── page.tsx             # Social Network (Users/Friends/Requests)
-│   ├── notifications/
-│   │   └── page.tsx         # Friend requests management
+│   ├── layout.tsx                # Auth guard + sidebar
+│   ├── page.tsx                  # Social hub
+│   ├── notifications/page.tsx    # Friend requests
 │   └── chat/
-│       ├── page.tsx         # Chat list (real-time)
-│       └── [id]/page.tsx    # Private chat room
+│       ├── page.tsx              # Chat list
+│       └── [id]/page.tsx         # Private chat room
 └── api/
     └── ai-suggest/
-        └── route.ts         # Groq AI smart replies
+        └── route.ts              # Groq smart reply generation
 ```
 
 ---
 
 ## ⚙️ Getting Started
 
-### 1. Clone the repo
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Mohammadkaifattari/live-chat-app.git
-cd live-chat-app
+git clone https://github.com/Mohammadkaifattari/LIVE-CHAT-APP.git
+cd LIVE-CHAT-APP
 ```
 
 ### 2. Install dependencies
@@ -89,26 +88,43 @@ cd live-chat-app
 npm install
 ```
 
-### 3. Setup environment variables
+### 3. Create environment variables
 
-Create a `.env.local` file in the root:
+Create a `.env.local` file in the project root:
 
 ```env
-GROQ_API_KEY=your_groq_api_key_here
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+GROQ_API_KEY=your_groq_key
+GROQ_API_KEY_2=your_second_groq_key
+GROQ_API_KEY_3=your_third_groq_key
+GROQ_API_KEY_4=your_fourth_groq_key
+GROQ_API_KEY_5=your_fifth_groq_key
+GROQ_MODEL=openai/gpt-oss-20b
+GROQ_BASE_URL=https://api.groq.com/openai/v1
 ```
 
 ### 4. Firebase setup
 
 - Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-- Enable **Firestore** and **Authentication** (Email/Password + Google)
+- Enable **Authentication** and **Firestore**
+- Enable email/password signup and Google login
 - Copy your config into `lib/firebase.ts`
-- Apply the Firestore security rules from `firestore.rules`
+- Add the Firestore security rules from `firestore.rules`
 
 ### 5. Run locally
 
 ```bash
 npm run dev
 ```
+
+Open: `http://localhost:3000`
 
 ---
 
@@ -123,9 +139,11 @@ service cloud.firestore {
       allow update: if request.auth != null;
       allow create, delete: if request.auth.uid == userId;
     }
+
     match /chats/{chatId} {
       allow read, write: if request.auth != null
         && request.auth.uid in chatId.split("_");
+
       match /messages/{messageId} {
         allow read: if request.auth != null
           && request.auth.uid in chatId.split("_");
@@ -135,10 +153,12 @@ service cloud.firestore {
           && request.auth.uid in chatId.split("_");
       }
     }
+
     match /typing/{roomId} {
       allow read, write: if request.auth != null
         && request.auth.uid in roomId.split("_");
     }
+
     match /presence/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth.uid == userId;
@@ -151,9 +171,37 @@ service cloud.firestore {
 
 ## 🚀 Deployment
 
-Deployed on **Vercel** — [live-chat-app-red.vercel.app](https://live-chat-app-red.vercel.app)
+This project is deployed on **Vercel**:
 
-Add `GROQ_API_KEY` in Vercel → Project Settings → Environment Variables.
+- [Live Demo](https://live-chat-app-red.vercel.app)
+
+For production deployment, add these variables in Vercel → Project Settings → Environment Variables:
+
+- `GROQ_API_KEY`
+- `GROQ_API_KEY_2`
+- `GROQ_API_KEY_3`
+- `GROQ_API_KEY_4`
+- `GROQ_API_KEY_5`
+- `GROQ_MODEL`
+- `GROQ_BASE_URL`
+
+---
+
+## 🤖 AI Suggestion Behavior
+
+The AI reply endpoint is implemented in:
+
+```bash
+app/api/ai-suggest/route.ts
+```
+
+It does the following:
+
+- reads the last conversation context
+- sends the latest message history to Groq
+- asks for exactly 3 short, natural replies
+- parses the JSON response safely
+- falls back to a local suggestion list only if the API request fails
 
 ---
 
