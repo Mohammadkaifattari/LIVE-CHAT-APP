@@ -1,105 +1,82 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL_CANDIDATES = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"];
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-function normalizeSuggestions(list: unknown[]): string[] {
+const MODELS = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"];
+
+type ChatMessage = { role?: string; content?: string; text?: string };
+
+function unique(values: unknown[]): string[] {
   const seen = new Set<string>();
-  const unique: string[] = [];
-
-  for (const item of list) {
-    if (typeof item !== "string") continue;
-    const clean = item.trim();
-    if (!clean) continue;
-    const key = clean.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    unique.push(clean);
-  }
-
-  return unique.slice(0, 3);
+  return values
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 3);
 }
 
-function shuffle<T>(items: T[]): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-function extractSuggestions(raw: unknown): string[] {
-  const text = String(raw ?? "")
+function parseSuggestions(value: unknown): string[] {
+  const text = String(value ?? "")
     .replace(/<think>[\s\S]*?<\/think>/gi, "")
     .replace(/```(?:json)?/gi, "")
     .trim();
 
   if (!text) return [];
 
-  const possible: unknown[] = [];
-
+  const candidates: unknown[] = [];
   try {
-    possible.push(JSON.parse(text));
+    candidates.push(JSON.parse(text));
   } catch {
     const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (match) {
-      try {
-        possible.push(JSON.parse(match[0]));
-      } catch {
-        // ignore parse failure
-      }
+      try { candidates.push(JSON.parse(match[0])); } catch { /* ignore */ }
     }
   }
 
-  for (const value of possible) {
-    const arr = Array.isArray(value)
-      ? value
-      : value && typeof value === "object"
-        ? ((value as Record<string, unknown>).suggestions ?? (value as Record<string, unknown>).replies ?? [])
+  for (const candidate of candidates) {
+    const values = Array.isArray(candidate)
+      ? candidate
+      : candidate && typeof candidate === "object"
+        ? ((candidate as Record<string, unknown>).suggestions ?? (candidate as Record<string, unknown>).replies ?? [])
         : [];
-
-    if (!Array.isArray(arr)) continue;
-
-    const suggestions = arr
-      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-      .map((item) => item.trim())
-      .slice(0, 3);
-
-    if (suggestions.length > 0) return suggestions;
+    const result = Array.isArray(values) ? unique(values) : [];
+    if (result.length) return result;
   }
 
   return [];
 }
 
-function localFallback(messages: any[]): string[] {
-  const latest = messages[messages.length - 1];
-  const lastText = latest?.text?.trim();
-
-  if (!lastText || lastText === "[shared an image]") {
-    return ["nice pic! 😍", "wow kya cheez hai!", "aur bhejo 👀"];
-  }
-
-  if (lastText.length < 12) {
-    return ["ye to mast hai 😄", "waah, zabardast!", "aur batao na 😅"];
-  }
-
-  return ["yeh to bilkul sahi hai 😄", "interesting, aur batao", "kya scene hai yaar? 😏"];
+function fallback(history: ChatMessage[]): string[] {
+  const latest = String(history.at(-1)?.content ?? history.at(-1)?.text ?? "").trim();
+  if (!latest || latest === "[image]") return ["Kya hua?", "Nice picture 😍", "Aur bhejo!"];
+  if (latest.includes("?")) return ["Haan bilkul", "Main check karta hoon", "Tum kya sochte ho?"];
+  return ["Acha, phir batao", "Haan samajh gaya", "Ye interesting hai 😄"];
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const messages = Array.isArray(body?.messages) ? body.messages : [];
-    const apiKey = process.env.GROQ_API_KEY?.trim();
+    const input = Array.isArray(body?.messages) ? body.messages : [];
+    const history: ChatMessage[] = input.slice(-20).map((message: ChatMessage) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: String(message.content ?? message.text ?? "[image]").slice(0, 1000),
+    }));
 
-    if (!apiKey || messages.length === 0) {
-      console.error("AI suggestions unavailable: missing key or messages");
-      return NextResponse.json({ suggestions: [] });
+    if (!history.length) return NextResponse.json({ suggestions: [] });
+
+    const apiKey = process.env.GROQ_API_KEY?.trim();
+    if (!apiKey) {
+      console.error("AI suggestions: GROQ_API_KEY is missing");
+      return NextResponse.json({ suggestions: fallback(history), source: "fallback" });
     }
 
-    const history = messages.slice(-20);
-
-    for (const model of MODEL_CANDIDATES) {
+    for (const model of MODELS) {
       try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
@@ -110,15 +87,14 @@ export async function POST(req: NextRequest) {
           cache: "no-store",
           body: JSON.stringify({
             model,
-            temperature: 0.8,
-            top_p: 0.9,
-            max_tokens: 180,
+            temperature: 0.85,
+            top_p: 0.95,
+            max_tokens: 220,
             response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",
-                content:
-                  "Use the full recent conversation history to understand tone, context, and relationships. Generate exactly 3 short, natural replies to the friend's latest message only. Match language (English, Urdu, Roman Urdu, Hinglish). Keep each reply short, under 8 words, specific to the conversation, and return only JSON: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}.",
+                content: "Read the recent conversation carefully. Reply to the latest friend message, not earlier messages. Return exactly three different, natural, context-specific short replies. Match the conversation language (English, Roman Urdu, Urdu, or Hinglish). Do not use generic filler. Each reply must be under 12 words. Return only valid JSON: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}.",
               },
               ...history,
             ],
@@ -126,42 +102,25 @@ export async function POST(req: NextRequest) {
         });
 
         const raw = await response.text();
-        let data: any = null;
-
-        try {
-          data = JSON.parse(raw);
-        } catch {
-          data = { raw };
-        }
+        let data: any;
+        try { data = JSON.parse(raw); } catch { data = null; }
 
         if (!response.ok) {
-          console.error("Groq suggestions failed", {
-            model,
-            status: response.status,
-            error: data?.error ?? raw,
-          });
+          console.error("Groq suggestions failed", model, response.status, raw);
           continue;
         }
 
-        const directSuggestions = extractSuggestions(data?.choices?.[0]?.message?.content);
-        const combined = shuffle([...directSuggestions, ...localFallback(history)]);
-        const suggestions = normalizeSuggestions(combined);
-
-        if (suggestions.length > 0) {
-          return NextResponse.json({ suggestions });
+        const message = data?.choices?.[0]?.message;
+        const suggestions = parseSuggestions(message?.content ?? message?.reasoning);
+        if (suggestions.length) {
+          return NextResponse.json({ suggestions, source: "groq" });
         }
-
-        console.error("Groq returned no parseable suggestions", {
-          model,
-          message: data?.choices?.[0]?.message,
-          raw,
-        });
       } catch (error) {
-        console.error("Groq request error", { model, error });
+        console.error("Groq request error", model, error);
       }
     }
 
-    return NextResponse.json({ suggestions: normalizeSuggestions(localFallback(history)) });
+    return NextResponse.json({ suggestions: fallback(history), source: "fallback" });
   } catch (error) {
     console.error("AI suggestion route error", error);
     return NextResponse.json({ suggestions: [] });
