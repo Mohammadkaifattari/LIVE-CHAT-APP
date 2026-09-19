@@ -35,7 +35,11 @@ function parseSuggestions(value: unknown): string[] {
   } catch {
     const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (match) {
-      try { candidates.push(JSON.parse(match[0])); } catch { /* ignore */ }
+      try {
+        candidates.push(JSON.parse(match[0]));
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -57,6 +61,16 @@ function fallback(history: ChatMessage[]): string[] {
   if (!latest || latest === "[image]") return ["Kya hua?", "Nice picture 😍", "Aur bhejo!"];
   if (latest.includes("?")) return ["Haan bilkul", "Main check karta hoon", "Tum kya sochte ho?"];
   return ["Acha, phir batao", "Haan samajh gaya", "Ye interesting hai 😄"];
+}
+
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    message: "Use POST to get smart suggestions.",
+    expectedBody: {
+      messages: [{ role: "user", content: "yaar aaj bohat thak gaya hoon" }],
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -94,7 +108,8 @@ export async function POST(req: NextRequest) {
             messages: [
               {
                 role: "system",
-                content: "Read the recent conversation carefully. Reply to the latest friend message, not earlier messages. Return exactly three different, natural, context-specific short replies. Match the conversation language (English, Roman Urdu, Urdu, or Hinglish). Do not use generic filler. Each reply must be under 12 words. Return only valid JSON: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}.",
+                content:
+                  "Read the recent conversation carefully. Reply to the latest friend message, not earlier messages. Return exactly three different, natural, context-specific short replies. Match the conversation language (English, Roman Urdu, Urdu, or Hinglish). Do not use generic filler. Each reply must be under 12 words. Return only valid JSON: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}.",
               },
               ...history,
             ],
@@ -103,7 +118,11 @@ export async function POST(req: NextRequest) {
 
         const raw = await response.text();
         let data: any;
-        try { data = JSON.parse(raw); } catch { data = null; }
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = null;
+        }
 
         if (!response.ok) {
           console.error("Groq suggestions failed", model, response.status, raw);
