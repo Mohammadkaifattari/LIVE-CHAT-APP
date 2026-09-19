@@ -3,9 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MODELS = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"];
+const DEFAULT_MODEL = "openai/gpt-oss-20b";
+const DEFAULT_BASE_URL = "https://api.groq.com/openai/v1";
 
 type ChatMessage = { role?: string; content?: string; text?: string };
+
+function getGroqKeys(): string[] {
+  return [
+    process.env.GROQ_API_KEY,
+    process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3,
+    process.env.GROQ_API_KEY_4,
+    process.env.GROQ_API_KEY_5,
+  ].filter((key): key is string => Boolean(key?.trim())).map((key) => key.trim());
+}
 
 function unique(values: unknown[]): string[] {
   const seen = new Set<string>();
@@ -26,7 +37,6 @@ function parseSuggestions(value: unknown): string[] {
     .replace(/<think>[\s\S]*?<\/think>/gi, "")
     .replace(/```(?:json)?/gi, "")
     .trim();
-
   if (!text) return [];
 
   const candidates: unknown[] = [];
@@ -35,11 +45,7 @@ function parseSuggestions(value: unknown): string[] {
   } catch {
     const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (match) {
-      try {
-        candidates.push(JSON.parse(match[0]));
-      } catch {
-        // ignore
-      }
+      try { candidates.push(JSON.parse(match[0])); } catch { /* ignore */ }
     }
   }
 
@@ -52,7 +58,6 @@ function parseSuggestions(value: unknown): string[] {
     const result = Array.isArray(values) ? unique(values) : [];
     if (result.length) return result;
   }
-
   return [];
 }
 
@@ -63,13 +68,15 @@ function fallback(history: ChatMessage[]): string[] {
   return ["Acha, phir batao", "Haan samajh gaya", "Ye interesting hai 😄"];
 }
 
+function rotate<T>(items: T[], start: number): T[] {
+  return items.slice(start).concat(items.slice(0, start));
+}
+
 export async function GET() {
   return NextResponse.json({
     ok: true,
     message: "Use POST to get smart suggestions.",
-    expectedBody: {
-      messages: [{ role: "user", content: "yaar aaj bohat thak gaya hoon" }],
-    },
+    configuredKeys: getGroqKeys().length,
   });
 }
 
@@ -84,15 +91,20 @@ export async function POST(req: NextRequest) {
 
     if (!history.length) return NextResponse.json({ suggestions: [] });
 
-    const apiKey = process.env.GROQ_API_KEY?.trim();
-    if (!apiKey) {
-      console.error("AI suggestions: GROQ_API_KEY is missing");
+    const keys = getGroqKeys();
+    if (!keys.length) {
+      console.error("AI suggestions: no GROQ_API_KEY variables configured");
       return NextResponse.json({ suggestions: fallback(history), source: "fallback" });
     }
 
-    for (const model of MODELS) {
+    const baseUrl = (process.env.GROQ_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, "");
+    const model = process.env.GROQ_MODEL || DEFAULT_MODEL;
+    // Random start spreads requests across all configured keys. Failed keys are retried last.
+    const orderedKeys = rotate(keys, Math.floor(Math.random() * keys.length));
+
+    for (const apiKey of orderedKeys) {
       try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -118,14 +130,10 @@ export async function POST(req: NextRequest) {
 
         const raw = await response.text();
         let data: any;
-        try {
-          data = JSON.parse(raw);
-        } catch {
-          data = null;
-        }
+        try { data = JSON.parse(raw); } catch { data = null; }
 
         if (!response.ok) {
-          console.error("Groq suggestions failed", model, response.status, raw);
+          console.error("Groq key request failed", { status: response.status, error: data?.error ?? raw });
           continue;
         }
 
@@ -135,7 +143,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ suggestions, source: "groq" });
         }
       } catch (error) {
-        console.error("Groq request error", model, error);
+        console.error("Groq request error", error);
       }
     }
 
