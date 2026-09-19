@@ -2,39 +2,39 @@ import { NextRequest, NextResponse } from "next/server";
 
 const MODEL_CANDIDATES = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"];
 
-function extractSuggestions(content: unknown): string[] {
-  const text = String(content ?? "")
+function extractSuggestions(raw: unknown): string[] {
+  const text = String(raw ?? "")
     .replace(/<think>[\s\S]*?<\/think>/gi, "")
     .replace(/```(?:json)?/gi, "")
     .trim();
 
   if (!text) return [];
 
-  const candidates: unknown[] = [];
+  const possible: unknown[] = [];
 
   try {
-    candidates.push(JSON.parse(text));
+    possible.push(JSON.parse(text));
   } catch {
     const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (match) {
       try {
-        candidates.push(JSON.parse(match[0]));
+        possible.push(JSON.parse(match[0]));
       } catch {
-        // ignore parse failure and keep trying
+        // ignore and continue
       }
     }
   }
 
-  for (const candidate of candidates) {
-    const values = Array.isArray(candidate)
-      ? candidate
-      : candidate && typeof candidate === "object"
-        ? ((candidate as Record<string, unknown>).suggestions ?? (candidate as Record<string, unknown>).replies ?? [])
+  for (const value of possible) {
+    const arr = Array.isArray(value)
+      ? value
+      : value && typeof value === "object"
+        ? ((value as Record<string, unknown>).suggestions ?? (value as Record<string, unknown>).replies ?? [])
         : [];
 
-    if (!Array.isArray(values)) continue;
+    if (!Array.isArray(arr)) continue;
 
-    const suggestions = values
+    const suggestions = arr
       .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
       .map((item) => item.trim())
       .slice(0, 3);
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
               {
                 role: "system",
                 content:
-                  "Return only a JSON object with exactly this shape: {\"suggestions\":[\"short reply 1\",\"short reply 2\",\"short reply 3\"]}. Keep each reply under 8 words and match the user's language.",
+                  "Return only a valid JSON object with exactly this structure: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}. Keep each reply under 8 words and match the user's language.",
               },
               ...messages.slice(-6),
             ],
@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
 
         const raw = await response.text();
         let data: any = null;
+
         try {
           data = JSON.parse(raw);
         } catch {
