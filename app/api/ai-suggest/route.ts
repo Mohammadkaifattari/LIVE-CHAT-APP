@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL_CANDIDATES = ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "llama-3.3-70b-versatile"];
+const MODEL_CANDIDATES = ["openai/gpt-oss-20b", "openai/gpt-oss-120b"];
 
-function extractSuggestions(content: unknown): string[] {
-  const text = String(content ?? "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/```(?:json)?/gi, "").trim();
-  if (!text) return [];
+function extractSuggestions(message: any): string[] {
+  const content = message?.content ?? message?.reasoning ?? "";
+  const text = String(content)
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/```(?:json)?/gi, "")
+    .trim();
 
   const candidates: unknown[] = [];
   try {
     candidates.push(JSON.parse(text));
   } catch {
-    const match = text.match(/\[[\s\S]*\]/);
+    const match = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (match) {
       try { candidates.push(JSON.parse(match[0])); } catch {}
     }
@@ -23,8 +26,11 @@ function extractSuggestions(content: unknown): string[] {
         ? ((candidate as Record<string, unknown>).suggestions ?? (candidate as Record<string, unknown>).replies ?? [])
         : [];
     if (!Array.isArray(values)) continue;
-    const suggestions = values.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, 3);
-    if (suggestions.length > 0) return suggestions;
+    const suggestions = values
+      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      .map((item) => item.trim())
+      .slice(0, 3);
+    if (suggestions.length === 3) return suggestions;
   }
   return [];
 }
@@ -48,10 +54,15 @@ export async function POST(req: NextRequest) {
           cache: "no-store",
           body: JSON.stringify({
             model,
-            temperature: 0.7,
-            max_tokens: 120,
+            reasoning_effort: "low",
+            temperature: 0.4,
+            max_completion_tokens: 300,
+            response_format: { type: "json_object" },
             messages: [
-              { role: "system", content: "Return ONLY a JSON array of exactly 3 short natural replies to the friend's latest message. Match the language of the message. Maximum 8 words each." },
+              {
+                role: "system",
+                content: "Return a JSON object in exactly this format: {\"suggestions\":[\"reply 1\",\"reply 2\",\"reply 3\"]}. Give exactly 3 short natural replies to the friend's latest message, maximum 8 words each, matching its language.",
+              },
               ...messages.slice(-6),
             ],
           }),
@@ -66,9 +77,13 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const suggestions = extractSuggestions(data?.choices?.[0]?.message?.content);
-        if (suggestions.length > 0) return NextResponse.json({ suggestions });
-        console.error("Groq returned no parseable suggestions", { model, payload: data });
+        const suggestions = extractSuggestions(data?.choices?.[0]?.message);
+        if (suggestions.length === 3) return NextResponse.json({ suggestions });
+        console.error("Groq returned no parseable suggestions", {
+          model,
+          finishReason: data?.choices?.[0]?.finish_reason,
+          message: data?.choices?.[0]?.message,
+        });
       } catch (error) {
         console.error("Groq request error", { model, error });
       }
